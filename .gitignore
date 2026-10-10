@@ -1,0 +1,31 @@
+# Maven build output
+/target/
+*.class
+
+# IntelliJ IDEA, Eclipse, and VS Code local settings
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.vscode/
+/bin/
+/out/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*~
+
+# Local configuration, logs, and private runtime data
+.env
+.env.*
+!.env.example
+*.log
+/data-local/
+
+# Keep the Maven Wrapper and the shared data/*.txt examples tracked.

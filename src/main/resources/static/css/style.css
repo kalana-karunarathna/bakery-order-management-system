@@ -1,0 +1,43 @@
+:root {
+    --bakery-brown: #643d2a;
+    --bakery-cream: #fff8ef;
+}
+
+body {
+    background: var(--bakery-cream);
+    color: #322b27;
+}
+
+.navbar {
+    background: var(--bakery-brown);
+}
+
+.hero {
+    max-width: 48rem;
+}
+
+.module-card {
+    border: 1px solid #e4d5c7;
+    border-radius: 1rem;
+}
+
+.btn-bakery {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--bakery-brown);
+    --bs-btn-border-color: var(--bakery-brown);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #47291b;
+    --bs-btn-hover-border-color: #47291b;
+    --bs-btn-focus-shadow-rgb: 100, 61, 42;
+}
+
+.skip-link {
+    position: absolute;
+    top: -5rem;
+    left: 1rem;
+    z-index: 1100;
+}
+
+.skip-link:focus {
+    top: 1rem;
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(pageTitle)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${pageTitle} + ' | Bakery Platform'">Bakery Platform</title>
+    <link rel="stylesheet" th:href="@{/vendor/bootstrap/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:fragment="header">
+    <a class="skip-link btn btn-light" href="#main-content">Skip to content</a>
+    <nav class="navbar navbar-expand-xl navbar-dark" aria-label="Main navigation">
+        <div class="container">
+            <a class="navbar-brand fw-bold" th:href="@{/}">Bakery Platform</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#main-navigation" aria-controls="main-navigation"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="main-navigation">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" th:href="@{/}">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/users}">Users</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/products}">Products</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/orders}">Orders</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/cake-bookings}">Custom Cakes</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/payments}">Payments</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/feedback}">Feedback &amp; Admin</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+<footer th:fragment="footer" class="container py-4 mt-5 border-top">
+    <p class="small text-secondary mb-0">Bakery Order and Custom Cake Booking Platform</p>
+</footer>
+<th:block th:fragment="scripts">
+    <script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}" defer></script>
+    <script th:src="@{/js/app.js}" defer></script>
+</th:block>
+</body>
+</html>

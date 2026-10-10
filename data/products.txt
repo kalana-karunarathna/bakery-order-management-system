@@ -1,0 +1,3 @@
+# Bakery Product Management - fictional sample records only
+# id|name|category|price|available
+P001|Butter Cake|CAKE|1500.00|true
