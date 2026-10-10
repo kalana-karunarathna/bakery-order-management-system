@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Order Management')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container py-5">
+    <a class="link-secondary" th:href="@{/}">Back to home</a>
+    <h1 class="display-6 fw-bold mt-4">Order Management</h1>
+    <p class="lead">Place bakery orders and follow their progress.</p>
+    <div class="card module-card mt-4">
+        <div class="card-body p-4">
+            <h2 class="h5">Coming soon</h2>
+            <p class="mb-0">This section is being prepared. Please check back for updates.</p>
+        </div>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

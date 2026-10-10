@@ -1,0 +1,3 @@
+# Payment and Invoice Management - fictional sample records only
+# id|orderId|amount|method|status|invoiceId
+PAY001|O001|3000.00|CASH|PENDING|INV001

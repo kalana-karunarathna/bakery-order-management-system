@@ -1,0 +1,3 @@
+# User Management - fictional sample records only
+# id|name|email|role
+U001|Sample Customer|customer@example.test|CUSTOMER

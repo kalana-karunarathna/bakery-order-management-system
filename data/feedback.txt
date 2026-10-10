@@ -1,0 +1,3 @@
+# Feedback, Review and Admin Management - fictional sample records only
+# id|userId|productId|rating|comment|moderationStatus
+F001|U001|P001|5|Lovely cake|PENDING
