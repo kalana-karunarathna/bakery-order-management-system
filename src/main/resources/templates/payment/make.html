@@ -1,0 +1,49 @@
+<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payment/fragments :: head('Make a Payment')}"></head>
+<body class="payment-page" th:with="page='make'"><header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container pay-main">
+<div th:replace="~{payment/fragments :: brand}"></div>
+<div class="pay-workspace"><aside th:replace="~{payment/fragments :: sidebar}"></aside><div class="pay-content">
+<div class="pay-breadcrumb"><a th:href="@{/}">Home</a><span>/</span><a th:href="@{/payments}">Payments</a><span>/</span><span>Make a Payment</span></div>
+<div class="pay-page-heading"><div><p class="pay-eyebrow">A simple step toward something sweet</p><h1>Make a Payment</h1><p>Choose your order, record your payment and keep the receipt.</p></div><a class="pay-text-link" th:href="@{/payments}"><svg th:replace="~{payment/fragments :: icon('arrow')}"></svg>Back to history</a></div>
+<div th:replace="~{payment/fragments :: messages}"></div>
+<div class="pay-notice"><svg th:replace="~{payment/fragments :: icon('lock')}"></svg><p><strong>Manual payment recording.</strong> Payments remain Pending until an administrator verifies receipt. Never enter card numbers, CVVs or banking credentials.</p></div>
+<section th:if="${#lists.isEmpty(targets)}" class="pay-panel pay-empty"><div class="pay-empty-icon"><svg th:replace="~{payment/fragments :: icon('receipt')}"></svg></div><h2>No payable orders or bookings</h2><p>Choose a confirmed bakery order or quoted custom cake booking when it becomes available through the order and booking services.</p><a class="btn pay-secondary" th:href="@{/payments}">Back to Payment History</a></section>
+<div class="pay-form-grid" th:if="${!#lists.isEmpty(targets)}">
+<form data-payment-form="create" method="post" th:action="@{/payments}" class="pay-panel pay-form">
+<input type="hidden" name="csrf" th:value="${csrf}"><input type="hidden" name="requestKey" th:value="${requestKey}">
+<div class="pay-form-section">
+<div class="pay-step-heading"><span>01</span><div><h2>Payment Details</h2><p>We'll use the details from your existing order or booking.</p></div></div>
+<div class="pay-field-grid">
+<div class="pay-field"><label for="type">Record type <span class="pay-required" aria-hidden="true">*</span></label><select required id="type" name="type" class="form-select" th:classappend="${errors.containsKey('type')} ? 'is-invalid'" aria-describedby="type-error"><option value="">Select type</option><option value="ORDER" th:selected="${form['type'] == 'ORDER'}">Bakery order</option><option value="BOOKING" th:selected="${form['type'] == 'BOOKING'}">Custom cake booking</option></select><div th:replace="~{payment/fragments :: field('type')}"></div></div>
+<div class="pay-field"><label for="targetId">Order / Booking <span class="pay-required" aria-hidden="true">*</span></label><select id="targetId" name="targetId" class="form-select" required th:classappend="${errors.containsKey('targetId')} ? 'is-invalid'" aria-describedby="targetId-error"><option value="">Select an order or booking</option><option th:each="t : ${targets}" th:attr="data-type=${t.type()},data-remaining=${t.remaining()},data-total=${t.total()},data-paid=${t.paid()},data-pending=${t.pending()},data-customer=${t.customerId()}" th:selected="${form['targetId'] == t.id() and form['type'] == t.type().name()}" th:value="${t.id()}" th:text="${t.id() + ' / Available LKR ' + #numbers.formatDecimal(t.remaining(),1,'COMMA',2,'POINT')}"></option></select><div th:replace="~{payment/fragments :: field('targetId')}"></div></div>
+</div></div>
+<div class="pay-form-section">
+<div class="pay-step-heading"><span>02</span><div><h2>Payment details</h2><p>Pay the remaining balance, a partial amount or a cake deposit.</p></div></div>
+<div class="pay-field"><label for="purpose">Payment purpose <span class="pay-required" aria-hidden="true">*</span></label><select required id="purpose" name="purpose" class="form-select" th:classappend="${errors.containsKey('purpose')} ? 'is-invalid'" aria-describedby="purpose-error purpose-help"><option value="">Select purpose</option><option value="PARTIAL" th:selected="${form['purpose'] == 'PARTIAL'}">Partial Payment</option><option value="FULL" th:selected="${form['purpose'] == 'FULL'}">Full remaining payment</option><option value="ADVANCE" th:selected="${form['purpose'] == 'ADVANCE'}">Custom cake advance deposit</option></select><div th:replace="~{payment/fragments :: field('purpose')}"></div><small id="purpose-help">Advance deposits apply to custom cake bookings only.</small></div>
+<div class="pay-field"><label for="amount">Payment amount <span class="pay-required" aria-hidden="true">*</span></label><div class="pay-currency-input"><span>LKR</span><input id="amount" name="amount" class="form-control" type="text" inputmode="decimal" maxlength="30" placeholder="0.00" th:value="${form['amount']}" required th:classappend="${errors.containsKey('amount')} ? 'is-invalid'" aria-describedby="amount-error amount-help"></div><div th:replace="~{payment/fragments :: field('amount')}"></div><small id="amount-help">Enter up to two decimal places. Pending payments reserve their amount.</small></div>
+</div>
+<div class="pay-form-section">
+<div class="pay-step-heading"><span>03</span><div><h2>How did you pay?</h2><p>Record the method used for this payment.</p></div></div>
+<div class="pay-method-choices" role="group" aria-label="Quick payment method selection" hidden data-method-choices>
+<button type="button" data-method-choice="CASH" aria-pressed="false"><svg th:replace="~{payment/fragments :: icon('cash')}"></svg><span>Cash</span></button>
+<button type="button" data-method-choice="CARD" aria-pressed="false"><svg th:replace="~{payment/fragments :: icon('card')}"></svg><span>Card</span></button>
+<button type="button" data-method-choice="BANK_TRANSFER" aria-pressed="false"><svg th:replace="~{payment/fragments :: icon('bank')}"></svg><span>Bank Transfer</span></button>
+</div>
+<div class="pay-field"><label for="method">Payment method <span class="pay-required" aria-hidden="true">*</span></label><select required id="method" name="method" class="form-select" th:classappend="${errors.containsKey('method')} ? 'is-invalid'" aria-describedby="method-error"><option value="">Select payment method</option><option th:each="m : ${methods}" th:selected="${form['method'] == m.name()}" th:value="${m}" th:text="${m.name() == 'BANK_TRANSFER' ? 'Bank Transfer' : #strings.capitalize(#strings.toLowerCase(m.name()))}"></option></select><div th:replace="~{payment/fragments :: field('method')}"></div></div>
+<div class="pay-field"><label for="reference" data-reference-label>Transaction reference <span class="pay-required" data-reference-required aria-hidden="true">*</span></label><input id="reference" name="reference" class="form-control" maxlength="80" placeholder="e.g. TRANSFER-2026-001" th:value="${form['reference']}" th:classappend="${errors.containsKey('reference')} ? 'is-invalid'" aria-describedby="reference-error reference-help"><div th:replace="~{payment/fragments :: field('reference')}"></div><small id="reference-help" data-reference-help>Use a receipt or transaction reference, never payment-card details.</small></div>
+</div>
+<div class="pay-form-bottom"><p><svg th:replace="~{payment/fragments :: icon('clock')}"></svg>Your payment will be recorded as Pending.</p><div><a class="btn pay-secondary" th:href="@{/payments}">Cancel</a><button class="btn pay-primary" type="submit" data-loading-label="Recording payment..."><svg th:replace="~{payment/fragments :: icon('check')}"></svg>Confirm Payment</button></div></div>
+</form>
+<aside class="pay-summary" aria-label="Payment summary">
+<div class="pay-summary-header"><svg th:replace="~{payment/fragments :: icon('receipt')}"></svg><span>Order Summary</span><span class="pay-summary-label">LKR</span></div>
+<div class="pay-summary-body"><p class="pay-summary-placeholder" data-summary-placeholder>Select an order or booking to see the details.</p>
+<dl class="pay-summary-details"><div><dt>Customer ID</dt><dd data-summary-customer>Not selected</dd></div><div><dt>Order / Booking</dt><dd data-summary-target>Not selected</dd></div></dl>
+<dl class="pay-summary-amounts"><div><dt>Total amount</dt><dd data-summary-total>&mdash;</dd></div><div><dt>Already paid</dt><dd data-summary-paid>&mdash;</dd></div><div><dt>Pending payments</dt><dd data-summary-pending>&mdash;</dd></div><div class="pay-summary-balance"><dt>Available balance</dt><dd data-summary-remaining>&mdash;</dd></div></dl>
+<div class="pay-summary-current" aria-live="polite"><span>This payment</span><strong data-summary-amount>LKR 0.00</strong><small data-summary-after>Choose an order and enter an amount.</small></div>
+<p class="pay-summary-note">Available balance excludes confirmed payments and pending reservations. A pending record is not a paid receipt.</p>
+<noscript><p>Enable JavaScript for the live summary. The order dropdown shows your available balance; all payment rules are still checked on the server.</p></noscript></div>
+<div class="pay-summary-footer"><svg th:replace="~{payment/fragments :: icon('lock')}"></svg>No card or banking credentials stored</div>
+</aside>
+</div>
+</div></div></main><footer th:replace="~{fragments/layout :: footer}"></footer><th:block th:replace="~{payment/fragments :: scripts}"></th:block></body></html>

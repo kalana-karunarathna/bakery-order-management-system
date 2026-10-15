@@ -1,20 +1,16 @@
-<!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Payment and Invoice Management')}"></head>
-<body>
-<header th:replace="~{fragments/layout :: header}"></header>
-<main id="main-content" class="container py-5">
-    <a class="link-secondary" th:href="@{/}">Back to home</a>
-    <h1 class="display-6 fw-bold mt-4">Payment and Invoice Management</h1>
-    <p class="lead">Record payments and view order invoices.</p>
-    <div class="card module-card mt-4">
-        <div class="card-body p-4">
-            <h2 class="h5">Coming soon</h2>
-            <p class="mb-0">This section is being prepared. Please check back for updates.</p>
-        </div>
-    </div>
-</main>
-<footer th:replace="~{fragments/layout :: footer}"></footer>
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-</body>
-</html>
+<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payment/fragments :: head('Payment History')}"></head>
+<body class="payment-page" th:with="page='history'"><header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container pay-main">
+<div th:replace="~{payment/fragments :: brand}"></div>
+<div class="pay-workspace"><aside th:replace="~{payment/fragments :: sidebar}"></aside><div class="pay-content">
+<div class="pay-breadcrumb"><a th:href="@{/}">Home</a><span aria-hidden="true">/</span><span>Payments</span></div>
+<div class="pay-page-heading"><div><p class="pay-eyebrow">Payment and Invoice Management</p><h1>Payment History</h1><p>Every payment, every detail. All in one place.</p></div><a th:if="${actor != null}" class="btn pay-primary" th:href="@{/payments/new}"><svg th:replace="~{payment/fragments :: icon('plus')}"></svg>Make a Payment</a><div th:if="${actor == null}" class="pay-heading-mark"><svg th:replace="~{payment/fragments :: icon('receipt')}"></svg></div></div>
+<div th:replace="~{payment/fragments :: messages}"></div>
+<section th:if="${actor == null}" class="pay-panel pay-welcome">
+<div class="pay-welcome-copy"><p class="pay-eyebrow">Your payments, neatly organized</p><h2>A little less paperwork.<br>A little more peace of mind.</h2><p>Track your bakery payments, find an invoice and keep your celebration plans in order.</p><a class="btn pay-primary" th:href="@{/users}"><svg th:replace="~{payment/fragments :: icon('lock')}"></svg>Go to User Management</a><p class="pay-integration-note">Sign in through User Management to access your payments. Authentication integration is awaiting the User Management module.</p></div>
+<div class="pay-welcome-art" aria-hidden="true"><div class="pay-paper"><span class="pay-paper-seal"><svg th:replace="~{payment/fragments :: icon('receipt')}"></svg></span><strong>Bakery Platform</strong><span>PAYMENT &amp; INVOICE</span><i></i><i></i><i></i><div class="pay-paper-total">All the sweet details.</div><span class="pay-paper-stamp"><svg th:replace="~{payment/fragments :: icon('lock')}"></svg>Private to your account</span></div></div>
+</section>
+<th:block th:if="${actor != null}"><section th:replace="~{payment/fragments :: records}"></section></th:block>
+<div class="pay-footer-note"><svg th:replace="~{payment/fragments :: icon('lock')}"></svg>Your payment records are visible only to you and authorized administrators.</div>
+</div></div></main><footer th:replace="~{fragments/layout :: footer}"></footer><th:block th:replace="~{payment/fragments :: scripts}"></th:block></body></html>

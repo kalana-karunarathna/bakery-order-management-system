@@ -1,0 +1,19 @@
+<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payment/fragments :: head('Admin Payment Dashboard')}"></head>
+<body class="payment-page" th:with="page='admin'"><header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container pay-main">
+<div th:replace="~{payment/fragments :: brand}"></div>
+<div class="pay-workspace"><aside th:replace="~{payment/fragments :: sidebar}"></aside><div class="pay-content">
+<div class="pay-breadcrumb"><a th:href="@{/}">Home</a><span>/</span><a th:href="@{/payments}">Payments</a><span>/</span><span>Administration</span></div>
+<div class="pay-page-heading"><div><p class="pay-eyebrow">Payment and Invoice Management</p><h1>Admin Payment Dashboard</h1><p>A clear view of payments, from first deposit to final receipt.</p></div><a class="btn pay-primary" th:href="@{/payments/new}"><svg th:replace="~{payment/fragments :: icon('plus')}"></svg>Record a Payment</a></div>
+<div th:replace="~{payment/fragments :: messages}"></div>
+<p class="pay-section-caption">Overview of the current search and filter results</p>
+<section class="pay-stats" aria-label="Payment overview" th:with="paid=${#aggregates.sum(payments.?[status.name() == 'PAID'].![amount])}">
+<article class="pay-stat"><div class="pay-stat-icon"><svg th:replace="~{payment/fragments :: icon('receipt')}"></svg></div><p>Total Recorded Payments</p><strong th:text="${#lists.size(payments)}"></strong><small>Payment records</small></article>
+<article class="pay-stat"><div class="pay-stat-icon pay-green"><svg th:replace="~{payment/fragments :: icon('cash')}"></svg></div><p>Total Paid Amount</p><strong class="pay-stat-currency" th:text="${'LKR ' + #numbers.formatDecimal(paid == null ? 0 : paid,1,'COMMA',2,'POINT')}"></strong><small>Confirmed receipts</small></article>
+<article class="pay-stat"><div class="pay-stat-icon pay-amber"><svg th:replace="~{payment/fragments :: icon('clock')}"></svg></div><p>Pending Payments</p><strong th:text="${#lists.size(payments.?[status.name() == 'PENDING'])}"></strong><small>Awaiting verification</small></article>
+<article class="pay-stat"><div class="pay-stat-icon pay-blue"><svg th:replace="~{payment/fragments :: icon('refund')}"></svg></div><p>Refunded Payments</p><strong th:text="${#lists.size(payments.?[status.name() == 'REFUNDED'])}"></strong><small>Recorded manual refunds</small></article>
+</section>
+<div class="pay-notice"><svg th:replace="~{payment/fragments :: icon('lock')}"></svg><p>Confirm payments only after independently verifying receipt. Card and bank transfer records do not verify transactions automatically.</p></div>
+<section th:replace="~{payment/fragments :: records}"></section>
+</div></div></main><footer th:replace="~{fragments/layout :: footer}"></footer><th:block th:replace="~{payment/fragments :: scripts}"></th:block></body></html>
