@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Edit Order')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container py-5">
+
+    <a class="link-secondary" th:href="@{/orders/{id}(id=${order.id})}">&#8592; Back to Order</a>
+    <h1 class="display-6 fw-bold mt-4">Edit Order <span th:text="${order.id}"></span></h1>
+    <p class="lead text-secondary">Only the quantity and delivery address may be changed for a pending order.</p>
+
+    <!-- Flash messages -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-6">
+
+            <!-- Read-only summary -->
+            <div class="module-card p-4 mb-4">
+                <h2 class="h6 text-secondary text-uppercase mb-3" style="letter-spacing:.04em;">Order Summary (read-only)</h2>
+                <p class="mb-1"><span class="fw-medium">Product:</span> <span th:text="${order.productName}"></span></p>
+                <p class="mb-1"><span class="fw-medium">Unit Price:</span>
+                    LKR <span th:text="${#numbers.formatDecimal(order.unitPrice, 1, 'COMMA', 2, 'POINT')}"></span></p>
+                <p class="mb-0"><span class="fw-medium">Order Type:</span>
+                    <span th:text="${order.orderType.name() == 'DELIVERY' ? 'Home Delivery (+LKR 250.00)' : 'Pickup'}"></span></p>
+            </div>
+
+            <!-- Edit form -->
+            <div class="form-section">
+                <form th:action="@{/orders/{id}/edit(id=${order.id})}" method="post" novalidate>
+
+                    <!-- Quantity -->
+                    <div class="mb-4">
+                        <label for="quantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity"
+                               min="1" th:value="${order.quantity}" required oninput="updateTotal()">
+                    </div>
+
+                    <!-- Delivery Address (only for delivery orders) -->
+                    <div class="mb-4" th:if="${order.orderType.name() == 'DELIVERY'}">
+                        <label for="deliveryAddress" class="form-label">Delivery Address</label>
+                        <textarea class="form-control" id="deliveryAddress" name="deliveryAddress"
+                                  rows="2" th:text="${order.deliveryAddress}" required></textarea>
+                    </div>
+
+                    <!-- Live total -->
+                    <div class="total-box mb-4" id="totalBox">
+                        <div class="total-label">Updated Total</div>
+                        <div class="total-amount" id="totalAmount">LKR 0.00</div>
+                        <div class="small mt-1" id="totalBreakdown"></div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-bakery px-5">Save Changes</button>
+                        <a th:href="@{/orders/{id}(id=${order.id})}" class="btn btn-outline-secondary">Discard</a>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:inline="javascript">
+    const unitPrice  = /*[[${order.unitPrice}]]*/  0;
+    const isDelivery = /*[[${order.orderType.name() == 'DELIVERY'}]]*/ false;
+
+    function updateTotal() {
+        const qty = parseFloat(document.getElementById('quantity').value) || 0;
+        const fee = isDelivery ? 250 : 0;
+        const total = qty * unitPrice + fee;
+
+        document.getElementById('totalAmount').textContent = 'LKR ' + total.toFixed(2);
+        document.getElementById('totalBreakdown').textContent =
+            qty + ' × LKR ' + unitPrice.toFixed(2) + (isDelivery ? ' + LKR 250.00 delivery' : '');
+    }
+
+    document.addEventListener('DOMContentLoaded', updateTotal);
+</script>
+</body>
+</html>

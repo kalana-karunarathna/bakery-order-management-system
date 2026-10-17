@@ -1,11 +1,20 @@
 :root {
-    --bakery-brown: #643d2a;
-    --bakery-cream: #fff8ef;
+    --bakery-brown:     #6B4226;
+    --bakery-cream:     #FFF8F0;
+    --bakery-gold:      #D9A066;
+    --bakery-ivory:     #FFFCF8;
+    --bakery-charcoal:  #2D2926;
+    --bakery-muted:     #746A62;
+    --bakery-border:    #E8DDD1;
+    --bakery-success:   #326442;
+    --bakery-error:     #A23732;
+    --bakery-pending:   #815D17;
+    --bakery-blue:      #3A6291;
 }
 
 body {
-    background: var(--bakery-cream);
-    color: #322b27;
+    background: var(--bakery-ivory);
+    color: var(--bakery-charcoal);
 }
 
 .navbar {
@@ -17,8 +26,9 @@ body {
 }
 
 .module-card {
-    border: 1px solid #e4d5c7;
+    border: 1px solid var(--bakery-border);
     border-radius: 1rem;
+    background: var(--bakery-cream);
 }
 
 .btn-bakery {
@@ -28,7 +38,15 @@ body {
     --bs-btn-hover-color: #fff;
     --bs-btn-hover-bg: #47291b;
     --bs-btn-hover-border-color: #47291b;
-    --bs-btn-focus-shadow-rgb: 100, 61, 42;
+    --bs-btn-focus-shadow-rgb: 107, 66, 38;
+}
+
+.btn-outline-bakery {
+    --bs-btn-color: var(--bakery-brown);
+    --bs-btn-border-color: var(--bakery-brown);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--bakery-brown);
+    --bs-btn-hover-border-color: var(--bakery-brown);
 }
 
 .skip-link {
@@ -41,3 +59,76 @@ body {
 .skip-link:focus {
     top: 1rem;
 }
+
+/* ── Order status badges ──────────────────────────────────────────── */
+.badge-pending {
+    background-color: var(--bakery-pending);
+    color: #fff;
+}
+.badge-preparing {
+    background-color: var(--bakery-blue);
+    color: #fff;
+}
+.badge-ready {
+    background-color: var(--bakery-gold);
+    color: var(--bakery-charcoal);
+}
+.badge-delivered {
+    background-color: var(--bakery-success);
+    color: #fff;
+}
+.badge-cancelled {
+    background-color: var(--bakery-error);
+    color: #fff;
+}
+
+/* ── Order detail card ────────────────────────────────────────────── */
+.order-detail-row {
+    border-bottom: 1px solid var(--bakery-border);
+    padding: 0.6rem 0;
+}
+.order-detail-row:last-child {
+    border-bottom: none;
+}
+.order-detail-label {
+    color: var(--bakery-muted);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ── Admin table ──────────────────────────────────────────────────── */
+.table-bakery thead {
+    background: var(--bakery-brown);
+    color: #fff;
+}
+.table-bakery tbody tr:hover {
+    background: var(--bakery-cream);
+}
+
+/* ── Form enhancements ───────────────────────────────────────────── */
+.form-section {
+    background: var(--bakery-cream);
+    border: 1px solid var(--bakery-border);
+    border-radius: 0.75rem;
+    padding: 2rem;
+}
+.form-label {
+    font-weight: 500;
+    color: var(--bakery-charcoal);
+}
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--bakery-gold);
+    box-shadow: 0 0 0 0.2rem rgba(217, 160, 102, 0.25);
+}
+
+/* ── Total highlight ─────────────────────────────────────────────── */
+.total-box {
+    background: var(--bakery-brown);
+    color: #fff;
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+}
+.total-box .total-label { font-size: 0.85rem; opacity: 0.8; }
+.total-box .total-amount { font-size: 1.75rem; font-weight: 700; }

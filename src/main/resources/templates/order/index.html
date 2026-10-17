@@ -4,15 +4,51 @@
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main id="main-content" class="container py-5">
-    <a class="link-secondary" th:href="@{/}">Back to home</a>
+
+    <a class="link-secondary" th:href="@{/}">&#8592; Back to home</a>
     <h1 class="display-6 fw-bold mt-4">Order Management</h1>
-    <p class="lead">Place bakery orders and follow their progress.</p>
-    <div class="card module-card mt-4">
-        <div class="card-body p-4">
-            <h2 class="h5">Coming soon</h2>
-            <p class="mb-0">This section is being prepared. Please check back for updates.</p>
+    <p class="lead text-secondary">Place bakery orders, track their progress, and manage fulfilment.</p>
+
+    <div class="row g-4 mt-2">
+
+        <!-- Place Order -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card module-card h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="mb-3" style="font-size:2rem;">&#127868;</div>
+                    <h2 class="h5 fw-bold">Place an Order</h2>
+                    <p class="text-secondary flex-grow-1">Choose your bakery items, select pickup or delivery, and submit your order.</p>
+                    <a th:href="@{/orders/place}" class="btn btn-bakery mt-2">Place Order</a>
+                </div>
+            </div>
         </div>
+
+        <!-- My Orders -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card module-card h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="mb-3" style="font-size:2rem;">&#128203;</div>
+                    <h2 class="h5 fw-bold">My Orders</h2>
+                    <p class="text-secondary flex-grow-1">View your order history and current status for each order.</p>
+                    <a th:href="@{/orders/my-orders}" class="btn btn-bakery mt-2">View My Orders</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card module-card h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="mb-3" style="font-size:2rem;">&#9881;&#65039;</div>
+                    <h2 class="h5 fw-bold">Admin Panel</h2>
+                    <p class="text-secondary flex-grow-1">View all orders, update fulfilment status, and manage records.</p>
+                    <a th:href="@{/orders/admin}" class="btn btn-bakery mt-2">Open Admin Panel</a>
+                </div>
+            </div>
+        </div>
+
     </div>
+
 </main>
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>

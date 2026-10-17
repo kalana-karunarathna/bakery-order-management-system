@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Admin — Order Management')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container-fluid py-5 px-4">
+
+    <a class="link-secondary" th:href="@{/orders}">&#8592; Back to Orders</a>
+    <h1 class="display-6 fw-bold mt-4">Admin — All Orders</h1>
+    <p class="lead text-secondary">View, update status, or delete any order record.</p>
+
+    <!-- Flash messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Stats strip -->
+    <div th:if="${orders != null}" class="row g-3 mt-2 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="module-card p-3 text-center">
+                <div class="fw-bold fs-4" th:text="${orders.size()}">0</div>
+                <div class="text-secondary small">Total Orders</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="module-card p-3 text-center">
+                <div class="fw-bold fs-4" th:text="${countPending}">0</div>
+                <div class="text-secondary small">Pending</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="module-card p-3 text-center">
+                <div class="fw-bold fs-4" th:text="${countPreparing}">0</div>
+                <div class="text-secondary small">Preparing</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="module-card p-3 text-center">
+                <div class="fw-bold fs-4" th:text="${countDelivered}">0</div>
+                <div class="text-secondary small">Delivered</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders table -->
+    <div th:if="${orders != null and !orders.isEmpty()}" class="table-responsive">
+        <table class="table table-bakery align-middle">
+            <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Type</th>
+                <th>Total (LKR)</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th style="min-width:200px;">Update Status</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="order : ${orders}">
+                <td class="small fw-medium" th:text="${order.id}"></td>
+                <td th:text="${order.customerId}"></td>
+                <td>
+                    <div th:text="${order.productName}"></div>
+                    <div class="text-secondary small" th:text="${order.productId}"></div>
+                </td>
+                <td th:text="${order.quantity}"></td>
+                <td>
+                    <span th:if="${order.orderType.name() == 'DELIVERY'}" class="badge bg-secondary">Delivery</span>
+                    <span th:if="${order.orderType.name() == 'PICKUP'}" class="badge bg-dark">Pickup</span>
+                </td>
+                <td th:text="${#numbers.formatDecimal(order.calculateTotal(), 1, 'COMMA', 2, 'POINT')}"></td>
+                <td th:text="${order.orderDate}"></td>
+                <td>
+                    <span class="badge" th:classappend="${order.statusBadgeClass}" th:text="${order.statusLabel}"></span>
+                </td>
+                <!-- Status update form -->
+                <td>
+                    <form th:action="@{/orders/{id}/status(id=${order.id})}" method="post"
+                          class="d-flex gap-1">
+                        <select name="status" class="form-select form-select-sm" style="min-width:130px;">
+                            <option th:each="s : ${statuses}"
+                                    th:value="${s.name()}"
+                                    th:text="${s.name()}"
+                                    th:selected="${s.name() == order.status.name()}"></option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-bakery">Set</button>
+                    </form>
+                </td>
+                <!-- Actions -->
+                <td>
+                    <div class="d-flex gap-1">
+                        <a th:href="@{/orders/{id}(id=${order.id})}"
+                           class="btn btn-sm btn-outline-secondary">View</a>
+                        <form th:action="@{/orders/{id}/delete(id=${order.id})}" method="post"
+                              onsubmit="return confirm('Permanently delete order ' + /*[[${order.id}]]*/ '' + '?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Empty state -->
+    <div th:if="${orders != null and orders.isEmpty()}" class="text-center text-secondary mt-5">
+        <div style="font-size:3rem;">&#128203;</div>
+        <p class="mt-2">No orders yet. Place the first one!</p>
+        <a th:href="@{/orders/place}" class="btn btn-bakery">Place Order</a>
+    </div>
+
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

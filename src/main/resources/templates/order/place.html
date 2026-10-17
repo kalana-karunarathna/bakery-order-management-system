@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Place Order')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container py-5">
+
+    <a class="link-secondary" th:href="@{/orders}">&#8592; Back to Orders</a>
+    <h1 class="display-6 fw-bold mt-4">Place an Order</h1>
+    <p class="lead text-secondary">Fill in the details below to place a new bakery order.</p>
+
+    <!-- Flash messages -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-7">
+            <div class="form-section">
+                <form th:action="@{/orders/place}" method="post" novalidate id="orderForm">
+
+                    <!-- Customer ID -->
+                    <div class="mb-4">
+                        <label for="customerId" class="form-label">Customer ID</label>
+                        <input type="text" class="form-control" id="customerId" name="customerId"
+                               placeholder="e.g. U001" required>
+                        <div class="form-text text-secondary">Enter your registered customer ID.</div>
+                    </div>
+
+                    <!-- Product ID -->
+                    <div class="mb-4">
+                        <label for="productId" class="form-label">Product ID</label>
+                        <input type="text" class="form-control" id="productId" name="productId"
+                               placeholder="e.g. P001" required>
+                    </div>
+
+                    <!-- Product Name -->
+                    <div class="mb-4">
+                        <label for="productName" class="form-label">Product Name</label>
+                        <input type="text" class="form-control" id="productName" name="productName"
+                               placeholder="e.g. Chocolate Fudge Cake" required>
+                    </div>
+
+                    <!-- Quantity & Unit Price -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <label for="quantity" class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity"
+                                   min="1" value="1" required oninput="updateTotal()">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="unitPrice" class="form-label">Unit Price (LKR)</label>
+                            <input type="number" class="form-control" id="unitPrice" name="unitPrice"
+                                   min="0.01" step="0.01" placeholder="0.00" required oninput="updateTotal()">
+                        </div>
+                    </div>
+
+                    <!-- Order Type -->
+                    <div class="mb-4">
+                        <label class="form-label d-block">Order Type</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="orderType"
+                                   id="typePickup" value="PICKUP" checked onchange="toggleDelivery()">
+                            <label class="form-check-label" for="typePickup">Pickup</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="orderType"
+                                   id="typeDelivery" value="DELIVERY" onchange="toggleDelivery()">
+                            <label class="form-check-label" for="typeDelivery">
+                                Delivery <span class="text-secondary small">(+LKR 250.00)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Address (conditional) -->
+                    <div class="mb-4" id="deliveryAddressGroup" style="display:none;">
+                        <label for="deliveryAddress" class="form-label">Delivery Address</label>
+                        <textarea class="form-control" id="deliveryAddress" name="deliveryAddress"
+                                  rows="2" placeholder="Enter full delivery address"></textarea>
+                    </div>
+
+                    <!-- Live total -->
+                    <div class="total-box mb-4" id="totalBox" style="display:none;">
+                        <div class="total-label">Estimated Total</div>
+                        <div class="total-amount" id="totalAmount">LKR 0.00</div>
+                        <div class="small mt-1" id="totalBreakdown"></div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-bakery px-5">Place Order</button>
+                        <a th:href="@{/orders}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+function toggleDelivery() {
+    const isDelivery = document.getElementById('typeDelivery').checked;
+    document.getElementById('deliveryAddressGroup').style.display = isDelivery ? 'block' : 'none';
+    document.getElementById('deliveryAddress').required = isDelivery;
+    updateTotal();
+}
+
+function updateTotal() {
+    const qty = parseFloat(document.getElementById('quantity').value) || 0;
+    const price = parseFloat(document.getElementById('unitPrice').value) || 0;
+    const isDelivery = document.getElementById('typeDelivery').checked;
+    const deliveryFee = isDelivery ? 250 : 0;
+    const subtotal = qty * price;
+    const total = subtotal + deliveryFee;
+
+    const totalBox = document.getElementById('totalBox');
+    const totalAmount = document.getElementById('totalAmount');
+    const breakdown = document.getElementById('totalBreakdown');
+
+    if (qty > 0 && price > 0) {
+        totalBox.style.display = 'block';
+        totalAmount.textContent = 'LKR ' + total.toFixed(2);
+        breakdown.textContent = qty + ' × LKR ' + price.toFixed(2) + (isDelivery ? ' + LKR 250.00 delivery' : '');
+    } else {
+        totalBox.style.display = 'none';
+    }
+}
+</script>
+</body>
+</html>

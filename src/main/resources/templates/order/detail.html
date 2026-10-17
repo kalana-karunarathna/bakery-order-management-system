@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Order Detail')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container py-5">
+
+    <a class="link-secondary" th:href="@{/orders/my-orders}">&#8592; Back to My Orders</a>
+
+    <!-- Flash messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mt-4" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div th:if="${order}" class="row mt-4">
+        <div class="col-lg-7">
+
+            <!-- Header -->
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <h1 class="h3 fw-bold mb-0">Order <span th:text="${order.id}"></span></h1>
+                <span class="badge fs-6" th:classappend="${order.statusBadgeClass}" th:text="${order.statusLabel}"></span>
+            </div>
+
+            <!-- Detail card -->
+            <div class="module-card p-4">
+
+                <div class="order-detail-row row">
+                    <div class="col-5 order-detail-label">Customer ID</div>
+                    <div class="col-7 fw-medium" th:text="${order.customerId}"></div>
+                </div>
+                <div class="order-detail-row row">
+                    <div class="col-5 order-detail-label">Product</div>
+                    <div class="col-7" th:text="${order.productName} + ' (' + ${order.productId} + ')'"></div>
+                </div>
+                <div class="order-detail-row row">
+                    <div class="col-5 order-detail-label">Quantity</div>
+                    <div class="col-7" th:text="${order.quantity}"></div>
+                </div>
+                <div class="order-detail-row row">
+                    <div class="col-5 order-detail-label">Unit Price</div>
+                    <div class="col-7" th:text="'LKR ' + ${#numbers.formatDecimal(order.unitPrice, 1, 'COMMA', 2, 'POINT')}"></div>
+                </div>
+                <div class="order-detail-row row" th:if="${order.orderType.name() == 'DELIVERY'}">
+                    <div class="col-5 order-detail-label">Delivery Fee</div>
+                    <div class="col-7">LKR 250.00</div>
+                </div>
+                <div class="order-detail-row row">
+                    <div class="col-5 order-detail-label">Order Type</div>
+                    <div class="col-7">
+                        <span th:text="${order.orderType.name() == 'DELIVERY' ? 'Home Delivery' : 'Pickup'}"></span>
+                    </div>
+                </div>
+                <div class="order-detail-row row" th:if="${order.orderType.name() == 'DELIVERY'}">
+                    <div class="col-5 order-detail-label">Delivery Address</div>
+                    <div class="col-7" th:text="${order.deliveryAddress}"></div>
+                </div>
+                <div class="order-detail-row row">
+                    <div class="col-5 order-detail-label">Order Date</div>
+                    <div class="col-7" th:text="${order.orderDate}"></div>
+                </div>
+            </div>
+
+            <!-- Total -->
+            <div class="total-box mt-4">
+                <div class="total-label">Total Amount</div>
+                <div class="total-amount" th:text="'LKR ' + ${#numbers.formatDecimal(order.calculateTotal(), 1, 'COMMA', 2, 'POINT')}"></div>
+            </div>
+
+            <!-- Actions (only for PENDING orders) -->
+            <div th:if="${order.editable}" class="mt-4 d-flex gap-2 flex-wrap">
+                <a th:href="@{/orders/{id}/edit(id=${order.id})}" class="btn btn-bakery">Edit Order</a>
+                <form th:action="@{/orders/{id}/cancel(id=${order.id})}" method="post"
+                      onsubmit="return confirm('Cancel this order?')">
+                    <button type="submit" class="btn btn-outline-danger">Cancel Order</button>
+                </form>
+            </div>
+
+            <!-- Info for non-editable orders -->
+            <div th:if="${!order.editable and order.status.name() != 'CANCELLED'}" class="alert alert-info mt-4">
+                This order is currently <strong th:text="${order.statusLabel}"></strong> and cannot be modified.
+            </div>
+            <div th:if="${order.status.name() == 'CANCELLED'}" class="alert alert-secondary mt-4">
+                This order has been cancelled.
+            </div>
+
+        </div>
+    </div>
+
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

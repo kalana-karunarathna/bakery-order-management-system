@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My Orders')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container py-5">
+
+    <a class="link-secondary" th:href="@{/orders}">&#8592; Back to Orders</a>
+    <h1 class="display-6 fw-bold mt-4">My Orders</h1>
+    <p class="lead text-secondary">Enter your Customer ID to view your order history and track current status.</p>
+
+    <!-- Search form -->
+    <div class="row mt-4">
+        <div class="col-lg-5">
+            <form th:action="@{/orders/my-orders}" method="get" class="d-flex gap-2">
+                <input type="text" class="form-control" name="customerId"
+                       placeholder="Customer ID (e.g. U001)"
+                       th:value="${customerId}" required aria-label="Customer ID">
+                <button type="submit" class="btn btn-bakery">Search</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div th:if="${errorMessage}" class="alert alert-danger mt-4" role="alert" th:text="${errorMessage}"></div>
+    <div th:if="${infoMessage}" class="alert alert-info mt-4" role="alert" th:text="${infoMessage}"></div>
+
+    <!-- Results -->
+    <div th:if="${orders != null and !orders.isEmpty()}" class="mt-4">
+        <h2 class="h5 mb-3">
+            Orders for <span class="fw-bold" th:text="${customerId}"></span>
+            <span class="text-secondary small ms-2" th:text="'(' + ${orders.size()} + ' record(s))'"></span>
+        </h2>
+
+        <div class="table-responsive">
+            <table class="table table-bakery align-middle">
+                <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Type</th>
+                    <th>Total (LKR)</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="order : ${orders}">
+                    <td class="fw-mono small" th:text="${order.id}"></td>
+                    <td th:text="${order.productName}"></td>
+                    <td th:text="${order.quantity}"></td>
+                    <td>
+                        <span th:if="${order.orderType.name() == 'DELIVERY'}" class="badge bg-secondary">Delivery</span>
+                        <span th:if="${order.orderType.name() == 'PICKUP'}" class="badge bg-dark">Pickup</span>
+                    </td>
+                    <td th:text="${#numbers.formatDecimal(order.calculateTotal(), 1, 'COMMA', 2, 'POINT')}"></td>
+                    <td th:text="${order.orderDate}"></td>
+                    <td>
+                        <span class="badge" th:classappend="${order.statusBadgeClass}" th:text="${order.statusLabel}"></span>
+                    </td>
+                    <td>
+                        <a th:href="@{/orders/{id}(id=${order.id})}" class="btn btn-sm btn-outline-secondary">View</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Prompt when no search yet -->
+    <div th:if="${orders == null}" class="mt-5 text-center text-secondary">
+        <div style="font-size:3rem;">&#128203;</div>
+        <p class="mt-2">Enter your Customer ID above to see your orders.</p>
+    </div>
+
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
