@@ -59,5 +59,3 @@ public class WeddingCake extends CustomCake {
     public boolean isFloralDecoration() { return floralDecoration; }
     public String getVenueName() { return venueName; }
 }
-
-// Wedding cake pricing: base price * 1.5 + floral decoration fee
