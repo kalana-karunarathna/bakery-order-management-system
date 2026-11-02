@@ -57,5 +57,3 @@ public class AnniversaryCake extends CustomCake {
     public int getYearsOfAnniversary() { return yearsOfAnniversary; }
     public String getDedicationQuote() { return dedicationQuote; }
 }
-
-// Anniversary cake pricing: base price * 1.2 + Rs. 500 per decade of marriage
