@@ -59,5 +59,3 @@ public class BirthdayCake extends CustomCake {
     public int getAge() { return age; }
     public int getCandles() { return candles; }
 }
-
-// Birthday cake pricing: base price + candle surcharge
