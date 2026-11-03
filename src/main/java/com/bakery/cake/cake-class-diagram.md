@@ -13,34 +13,6 @@ classDiagram
         -String specialInstructions
         +calculatePrice()* BigDecimal
         +getCakeType()* String
-        +basePrice() BigDecimal
-    }
-
-    class BirthdayCake {
-        -int age
-        -int candles
-        +calculatePrice() BigDecimal
-        +getCakeType() String
-    }
-
-    class WeddingCake {
-        -boolean floralDecoration
-        -String venueName
-        +calculatePrice() BigDecimal
-        +getCakeType() String
-    }
-
-    class AnniversaryCake {
-        -int yearsOfAnniversary
-        -String dedicationQuote
-        +calculatePrice() BigDecimal
-        +getCakeType() String
-    }
-
-    class GeneralCustomCake {
-        -String occasionDescription
-        +calculatePrice() BigDecimal
-        +getCakeType() String
     }
 
     class CakeBooking {
@@ -56,11 +28,33 @@ classDiagram
         +getPrice() BigDecimal
     }
 
-    CustomCake <|-- BirthdayCake
-    CustomCake <|-- WeddingCake
-    CustomCake <|-- AnniversaryCake
-    CustomCake <|-- GeneralCustomCake
+    class CakeBookingFactory {
+        +createFromForm(...) CustomCake
+        +createFromFileLine(...) CustomCake
+    }
 
-    CakeBooking *-- CustomCake : Composition (HAS-A)
-    CakeBooking o-- BookingStatus : Association
+    class BookingRepository {
+        <<interface>>
+        +findAll() List~CakeBooking~
+        +findById(String id) Optional~CakeBooking~
+        +findByCustomerId(String customerId) List~CakeBooking~
+        +save(CakeBooking booking)
+        +update(CakeBooking booking)
+        +delete(String id)
+        +generateNextId() String
+    }
+
+    class FileCakeBookingRepository {
+        -TextFileStorage storage
+        +findAll() List~CakeBooking~
+        +findById(String id) Optional~CakeBooking~
+        +findByCustomerId(String customerId) List~CakeBooking~
+        +save(CakeBooking booking)
+        +update(CakeBooking booking)
+        +delete(String id)
+        +generateNextId() String
+    }
+
+    BookingRepository <|.. FileCakeBookingRepository : Implements (Abstraction)
+    FileCakeBookingRepository ..> CakeBookingFactory : Uses to build models
 ```
