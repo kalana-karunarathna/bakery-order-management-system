@@ -1,3 +1,8 @@
-# Custom Cake Booking - fictional sample records only
-# id|userId|flavour|size|message|pickupDate|status
-C001|U001|Vanilla|1 kg|Happy Birthday|2026-12-20|REQUESTED
+# Custom Cake Booking – fictional sample records only
+# Format (15 fields separated by |):
+# bookingId|customerId|cakeType|flavour|weightKg|tiers|messageOnCake|specialInstructions|extra1|extra2|deliveryDate|contactPhone|status|imageFileName|createdAt
+CB001|U001|BIRTHDAY|Chocolate Fudge|2.0|2|Happy 10th Birthday Leo!|Eggless sponge please|10|10|2027-01-15|0771234567|PENDING||2026-11-01T10:00|4999.00
+CB002|U002|WEDDING|Vanilla|6.0|4|Wishing you a lifetime of happiness|Deliver by 10 AM|false|Cinnamon Grand Colombo|2027-02-14|0772345678|CONFIRMED||2026-11-02T14:30:00
+CB003|U001|ANNIVERSARY|StrawberryChocolate Swirl|3.0|2|25 Years of Love|No artificial colours|25|Forever and always|2027-03-20|0771234567|COMPLETED||2026-10-15T11:15:00
+CB004|U003|GENERAL|Red Velvet|1.5|1|Congratulations Dr. Perera!|Add a stethoscope sugar decoration|Graduation Celebration||2027-01-30|0773456789|PENDING||2026-11-05T16:45:00
+CB005|U002|BIRTHDAY|Lemon|1.0|1|Happy 1st Birthday Savi!|Very soft sponge - baby-friendly|1|1|2027-02-28|0772345678|CANCELLED||2026-11-07T08:20:00
