@@ -12,6 +12,15 @@
             <a th:href="@{/cake-bookings/new}" class="btn btn-warning fw-semibold">+ New Booking</a>
         </div>
     </div>
+
+    <!-- Empty state -->
+    <div th:if="${#lists.isEmpty(bookings)}" class="card module-card">
+        <div class="card-body p-4 text-center">
+            <h2 class="h5">No bookings yet</h2>
+            <p class="text-secondary mb-3">You haven't placed any cake bookings. Start by clicking "New Booking".</p>
+            <a th:href="@{/cake-bookings/new}" class="btn btn-warning">Book Your First Cake</a>
+        </div>
+    </div>
 </main>
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
