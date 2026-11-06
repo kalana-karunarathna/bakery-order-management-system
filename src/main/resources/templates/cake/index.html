@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Custom Cake Booking')}"></head>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('My Cake Bookings')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
+
 <main id="main-content" class="container py-5">
-    <a class="link-secondary" th:href="@{/}">Back to home</a>
-    <h1 class="display-6 fw-bold mt-4">Custom Cake Booking</h1>
-    <p class="lead">Plan a custom cake for your next celebration.</p>
-    <div class="card module-card mt-4">
-        <div class="card-body p-4">
-            <h2 class="h5">Coming soon</h2>
-            <p class="mb-0">This section is being prepared. Please check back for updates.</p>
+    <a class="link-secondary" th:href="@{/}">← Back to home</a>
+    <div class="d-flex align-items-center justify-content-between mt-4 mb-3 flex-wrap gap-2">
+        <h1 class="display-6 fw-bold mb-0">🎂 Custom Cake Bookings</h1>
+        <div class="d-flex gap-2">
+            <a th:href="@{/cake-bookings/new}" class="btn btn-warning fw-semibold">+ New Booking</a>
         </div>
     </div>
 </main>
