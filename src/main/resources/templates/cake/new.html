@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('New Cake Booking')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+
+<main id="main-content" class="container py-5">
+
+    <a class="link-secondary" th:href="@{/cake-bookings}">← Back to My Bookings</a>
+    <h1 class="display-6 fw-bold mt-4 mb-1">🎂 New Cake Booking</h1>
+    <p class="text-secondary mb-4">Fill in the details below. Fields marked with * are required.</p>
+
+    <!-- Validation error -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Error:</strong> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- multipart/form-data is required to upload the image -->
+    <form th:action="@{/cake-bookings}" method="post" enctype="multipart/form-data"
+          class="card shadow-sm p-4" novalidate>
+
+        <div class="row g-3">
+
+            <!-- ── Cake Type ── -->
+            <div class="col-md-6">
+                <label for="cakeType" class="form-label fw-semibold">Cake Type *</label>
+                <select id="cakeType" name="cakeType" class="form-select" required
+                        onchange="showExtraFields(this.value)">
+                    <option value="" disabled th:selected="${prevCakeType == null}">Select type…</option>
+                    <option value="BIRTHDAY"    th:selected="${prevCakeType == 'BIRTHDAY'}">Birthday Cake</option>
+                    <option value="WEDDING"     th:selected="${prevCakeType == 'WEDDING'}">Wedding Cake</option>
+                    <option value="ANNIVERSARY" th:selected="${prevCakeType == 'ANNIVERSARY'}">Anniversary Cake</option>
+                    <option value="GENERAL"     th:selected="${prevCakeType == 'GENERAL'}">General Custom Cake</option>
+                </select>
+            </div>
+
+            <!-- ── Flavour ── -->
+            <div class="col-md-6">
+                <label for="flavour" class="form-label fw-semibold">Flavour *</label>
+                <input type="text" id="flavour" name="flavour" class="form-control"
+                       placeholder="e.g. Chocolate, Vanilla, Red Velvet" required
+                       th:value="${prevFlavour}">
+            </div>
+
+            <!-- ── Weight ── -->
+            <div class="col-md-4">
+                <label for="weightKg" class="form-label fw-semibold">Weight (kg) *</label>
+                <input type="number" id="weightKg" name="weightKg" class="form-control"
+                       min="0.5" max="50" step="0.5" required th:value="${prevWeightKg ?: 1.0}">
+            </div>
+
+            <!-- ── Tiers ── -->
+            <div class="col-md-4">
+                <label for="tiers" class="form-label fw-semibold">Number of Tiers *</label>
+                <input type="number" id="tiers" name="tiers" class="form-control"
+                       min="1" max="10" required th:value="${prevTiers ?: 1}">
+            </div>
+
+            <!-- ── Delivery Date ── -->
+            <div class="col-md-4">
+                <label for="deliveryDate" class="form-label fw-semibold">Delivery Date *</label>
+                <input type="date" id="deliveryDate" name="deliveryDate" class="form-control"
+                       required th:min="${minDeliveryDate}">
+            </div>
+
+            <!-- ── Contact Phone ── -->
+            <div class="col-md-6">
+                <label for="contactPhone" class="form-label fw-semibold">Contact Phone *</label>
+                <input type="tel" id="contactPhone" name="contactPhone" class="form-control"
+                       placeholder="07XXXXXXXX or +94XXXXXXXXX" required
+                       th:value="${prevPhone}">
+                <div class="form-text">Sri Lankan format (07XXXXXXXX) or international (+XX…)</div>
+            </div>
+
+            <!-- ── Design Image ── -->
+            <div class="col-md-6">
+                <label for="designImage" class="form-label fw-semibold">Design Reference Image</label>
+                <input type="file" id="designImage" name="designImage" class="form-control"
+                       accept="image/jpeg,image/png,image/webp"
+                       onchange="previewImage(this)">
+                <div class="form-text">JPG, PNG or WebP · Max 5 MB</div>
+                <!-- Live preview before upload -->
+                <img id="imagePreview" src="#" alt="Preview" class="mt-2 rounded border d-none"
+                     style="max-height:150px; max-width:100%; object-fit:contain;">
+            </div>
+
+            <!-- ── Message on Cake ── -->
+            <div class="col-12">
+                <label for="messageOnCake" class="form-label fw-semibold">Message on Cake</label>
+                <input type="text" id="messageOnCake" name="messageOnCake" class="form-control"
+                       placeholder="e.g. Happy Birthday Sarah!" maxlength="120"
+                       th:value="${prevMessage}">
+            </div>
+
+            <!-- ── Special Instructions ── -->
+            <div class="col-12">
+                <label for="specialInstructions" class="form-label fw-semibold">Special Instructions</label>
+                <textarea id="specialInstructions" name="specialInstructions" class="form-control"
+                          rows="2" placeholder="Allergies, dietary needs, design notes…"
+                          maxlength="500" th:text="${prevSpecial}"></textarea>
+            </div>
+
+            <!-- ══ Dynamic extra fields shown by JavaScript based on cake type ══ -->
+
+            <!-- Birthday extra fields -->
+            <div id="extras-BIRTHDAY" class="col-12 d-none">
+                <div class="row g-3 border rounded p-3 bg-light">
+                    <div class="col-sm-6">
+                        <label for="birthdayAge" class="form-label">Birthday Person's Age *</label>
+                        <input type="number" id="birthdayAge" name="extra1" class="form-control"
+                               min="1" max="120" placeholder="e.g. 25" th:value="${prevExtra1}">
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="candles" class="form-label">Number of Candles</label>
+                        <input type="number" id="candles" name="extra2" class="form-control"
+                               min="0" max="150" placeholder="e.g. 25" th:value="${prevExtra2 ?: 0}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wedding extra fields -->
+            <div id="extras-WEDDING" class="col-12 d-none">
+                <div class="row g-3 border rounded p-3 bg-light">
+                    <div class="col-sm-6">
+                        <label class="form-label">Floral Sugar Decoration?</label>
+                        <select id="floralDecoration" name="extra1" class="form-select">
+                            <option value="false" th:selected="${prevExtra1 == 'false'}">No</option>
+                            <option value="true" th:selected="${prevExtra1 == 'true'}">Yes (+ Rs. 2,000)</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="venueName" class="form-label">Wedding Venue *</label>
+                        <input type="text" id="venueName" name="extra2" class="form-control"
+                               placeholder="e.g. Cinnamon Grand Colombo" th:value="${prevExtra2}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anniversary extra fields -->
+            <div id="extras-ANNIVERSARY" class="col-12 d-none">
+                <div class="row g-3 border rounded p-3 bg-light">
+                    <div class="col-sm-6">
+                        <label for="years" class="form-label">Years of Anniversary *</label>
+                        <input type="number" id="years" name="extra1" class="form-control"
+                               min="1" placeholder="e.g. 25" th:value="${prevExtra1}">
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="dedicationQuote" class="form-label">Dedication Quote</label>
+                        <input type="text" id="dedicationQuote" name="extra2" class="form-control"
+                               placeholder="e.g. Forever yours…" maxlength="200" th:value="${prevExtra2}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- General extra fields -->
+            <div id="extras-GENERAL" class="col-12 d-none">
+                <div class="border rounded p-3 bg-light">
+                    <label for="occasionDescription" class="form-label">Occasion Description *</label>
+                    <input type="text" id="occasionDescription" name="extra1" class="form-control"
+                           placeholder="e.g. Office farewell party, Graduation ceremony" maxlength="200"
+                           th:value="${prevExtra1}">
+                </div>
+            </div>
+
+        </div><!-- /row -->
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-warning fw-semibold px-4">Submit Booking</button>
+            <a th:href="@{/cake-bookings}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+
+    </form>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+<script>
+    /**
+     * Shows the extra fields panel that belongs to the selected cake type,
+     * and disables inputs in all other panels so they are never submitted.
+     */
+    function showExtraFields(type) {
+        const types = ['BIRTHDAY', 'WEDDING', 'ANNIVERSARY', 'GENERAL'];
+        types.forEach(t => {
+            const panel = document.getElementById('extras-' + t);
+            if (panel) {
+                const isSelected = (t === type);
+                panel.classList.toggle('d-none', !isSelected);
+                panel.querySelectorAll('input, select, textarea').forEach(el => {
+                    el.disabled = !isSelected;
+                });
+            }
+        });
+        // Toggle required attribute so the browser validates only visible fields
+        setExtraRequired('birthdayAge',          type === 'BIRTHDAY');
+        setExtraRequired('venueName',            type === 'WEDDING');
+        setExtraRequired('years',                type === 'ANNIVERSARY');
+        setExtraRequired('occasionDescription',  type === 'GENERAL');
+    }
+
+    function setExtraRequired(id, required) {
+        const el = document.getElementById(id);
+        if (el) el.required = required;
+    }
+
+    /** Shows a local image preview as soon as the user selects a file. */
+    function previewImage(input) {
+        const preview = document.getElementById('imagePreview');
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.src = e.target.result;
+                preview.classList.remove('d-none');
+            };
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            preview.classList.add('d-none');
+        }
+    }
+
+    // Initialize fields on page load
+    (function () {
+        const sel = document.getElementById('cakeType');
+        showExtraFields(sel ? sel.value : '');
+    })();
+</script>
+</body>
+</html>
+
