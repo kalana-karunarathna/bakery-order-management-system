@@ -1,3 +1,6 @@
 # User Management - fictional sample records only
-# id|name|email|role
-U001|Sample Customer|customer@example.test|CUSTOMER
+# id|role|customerType|fullName|email|phone|address|passwordHash|status|createdDate
+U001|CUSTOMER|REGULAR|Sample Customer|customer@example.test|||-|INACTIVE|2026-11-11
+U002|ADMIN|NONE|Bakery Admin|admin@bakery.test|||$2a$10$VwUF8nK5MVtWqLngkqGHZek58FTF4L8qNwFvFL3c8gKM.9Cw3GpzS|ACTIVE|2026-11-11
+U003|CUSTOMER|REGULAR|Kasun Perera|kasun@example.test|0771234567|123 Main St, Colombo|$2a$10$Hv21GVg1Wv5SpEAjKWBt9ePiCXsy3R2jNCrRawW87lBZzBNWJLYDG|ACTIVE|2026-11-11
+U004|CUSTOMER|REGULAR|salila Livera|salila@gmail.com|0715993028|maharagama|$2a$10$BeM2QrNisejTwuXeRdv4LOiBasQ9dewFEG9EMPD32iQttlbtML53C|ACTIVE|2026-11-11
