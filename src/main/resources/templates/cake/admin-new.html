@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin :: head('New Cake Booking (Admin)', null)}"></head>
+<body class="admin-ui">
+<header th:replace="~{fragments/admin :: topbar}"></header>
+
+<div class="a-shell">
+    <nav th:replace="~{fragments/admin :: sidebar('cakes')}"></nav>
+
+    <main id="main-content" class="a-content">
+
+        <div class="mb-3">
+            <a class="link-secondary text-decoration-none" th:href="@{/cake-bookings/admin}">← Back to Cake Orders</a>
+        </div>
+
+        <h1 class="h3 fw-bold mb-1">Create Cake Booking (Admin)</h1>
+        <p class="text-secondary small mb-4">Place a custom cake booking on behalf of any registered customer.</p>
+
+        <!-- Validation error -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <form th:action="@{/cake-bookings/admin/new}" method="post" enctype="multipart/form-data"
+              class="card shadow-sm border-0 p-4">
+
+            <div class="row g-3">
+
+                <!-- ── Customer ID ── -->
+                <div class="col-md-6">
+                    <label for="customerId" class="form-label fw-bold">Customer ID *</label>
+                    <input type="text" id="customerId" name="customerId" class="form-control"
+                           placeholder="e.g. U001" required value="U001">
+                    <div class="form-text">Customer ID to associate this booking with.</div>
+                </div>
+
+                <!-- ── Price (Optional Override) ── -->
+                <div class="col-md-6">
+                    <label for="price" class="form-label fw-bold">Custom Price (Rs.) (Optional)</label>
+                    <div class="input-group">
+                        <span class="input-group-text fw-semibold">Rs.</span>
+                        <input type="number" id="price" name="price" class="form-control"
+                               step="0.01" min="0" placeholder="Auto-calculated if blank">
+                    </div>
+                    <div class="form-text">Leave blank to calculate price automatically.</div>
+                </div>
+
+                <!-- ── Cake Type ── -->
+                <div class="col-md-6">
+                    <label for="cakeType" class="form-label fw-semibold">Cake Type *</label>
+                    <select id="cakeType" name="cakeType" class="form-select" required
+                            onchange="showExtraFields(this.value)">
+                        <option value="" disabled selected>Select cake type…</option>
+                        <option value="BIRTHDAY">Birthday Cake</option>
+                        <option value="WEDDING">Wedding Cake</option>
+                        <option value="ANNIVERSARY">Anniversary Cake</option>
+                        <option value="GENERAL">General Custom Cake</option>
+                    </select>
+                </div>
+
+                <!-- ── Flavour ── -->
+                <div class="col-md-6">
+                    <label for="flavour" class="form-label fw-semibold">Flavour *</label>
+                    <input type="text" id="flavour" name="flavour" class="form-control"
+                           placeholder="e.g. Chocolate, Vanilla" required>
+                </div>
+
+                <!-- ── Weight ── -->
+                <div class="col-md-3">
+                    <label for="weightKg" class="form-label fw-semibold">Weight (kg) *</label>
+                    <input type="number" id="weightKg" name="weightKg" class="form-control"
+                           min="0.5" max="50" step="0.5" required value="1.0">
+                </div>
+
+                <!-- ── Tiers ── -->
+                <div class="col-md-3">
+                    <label for="tiers" class="form-label fw-semibold">Tiers *</label>
+                    <input type="number" id="tiers" name="tiers" class="form-control"
+                           min="1" max="10" required value="1">
+                </div>
+
+                <!-- ── Delivery Date ── -->
+                <div class="col-md-6">
+                    <label for="deliveryDate" class="form-label fw-semibold">Delivery Date *</label>
+                    <input type="date" id="deliveryDate" name="deliveryDate" class="form-control"
+                           required th:min="${minDeliveryDate}">
+                </div>
+
+                <!-- ── Contact Phone ── -->
+                <div class="col-md-6">
+                    <label for="contactPhone" class="form-label fw-semibold">Contact Phone *</label>
+                    <input type="tel" id="contactPhone" name="contactPhone" class="form-control"
+                           placeholder="07XXXXXXXX or +94..." required value="0771234567">
+                </div>
+
+                <!-- ── Design Image ── -->
+                <div class="col-12">
+                    <label for="designImage" class="form-label fw-semibold">Design Reference Image</label>
+                    <input type="file" id="designImage" name="designImage" class="form-control"
+                           accept="image/jpeg,image/png,image/webp">
+                </div>
+
+                <!-- ── Message on Cake ── -->
+                <div class="col-12">
+                    <label for="messageOnCake" class="form-label fw-semibold">Message on Cake</label>
+                    <input type="text" id="messageOnCake" name="messageOnCake" class="form-control"
+                           placeholder="e.g. Happy Celebration!">
+                </div>
+
+                <!-- ── Special Instructions ── -->
+                <div class="col-12">
+                    <label for="specialInstructions" class="form-label fw-semibold">Special Instructions</label>
+                    <textarea id="specialInstructions" name="specialInstructions" class="form-control"
+                              rows="2" placeholder="Allergies, delivery notes…"></textarea>
+                </div>
+
+                <!-- ══ Dynamic extras ══ -->
+                <div id="extras-BIRTHDAY" class="col-12 d-none">
+                    <div class="row g-3 border rounded p-3 bg-light">
+                        <div class="col-sm-6">
+                            <label for="birthdayAge" class="form-label">Birthday Person's Age</label>
+                            <input type="number" id="birthdayAge" name="extra1" class="form-control" placeholder="e.g. 25">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="candles" class="form-label">Candles</label>
+                            <input type="number" id="candles" name="extra2" class="form-control" placeholder="e.g. 25" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="extras-WEDDING" class="col-12 d-none">
+                    <div class="row g-3 border rounded p-3 bg-light">
+                        <div class="col-sm-6">
+                            <label class="form-label">Floral Decoration?</label>
+                            <select id="floralDecoration" name="extra1" class="form-select">
+                                <option value="false">No</option>
+                                <option value="true">Yes (+ Rs. 2,000)</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="venueName" class="form-label">Venue</label>
+                            <input type="text" id="venueName" name="extra2" class="form-control" placeholder="e.g. Hotel">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="extras-ANNIVERSARY" class="col-12 d-none">
+                    <div class="row g-3 border rounded p-3 bg-light">
+                        <div class="col-sm-6">
+                            <label for="years" class="form-label">Anniversary Years</label>
+                            <input type="number" id="years" name="extra1" class="form-control" placeholder="e.g. 25">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="dedicationQuote" class="form-label">Quote</label>
+                            <input type="text" id="dedicationQuote" name="extra2" class="form-control" placeholder="e.g. Forever">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="extras-GENERAL" class="col-12 d-none">
+                    <div class="border rounded p-3 bg-light">
+                        <label for="occasionDescription" class="form-label">Occasion</label>
+                        <input type="text" id="occasionDescription" name="extra1" class="form-control" placeholder="e.g. Graduation">
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-warning fw-semibold px-4">Submit Booking</button>
+                <a th:href="@{/cake-bookings/admin}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+
+        </form>
+
+    </main>
+</div>
+
+<th:block th:replace="~{fragments/admin :: scripts}"></th:block>
+
+<script>
+    function showExtraFields(type) {
+        const types = ['BIRTHDAY', 'WEDDING', 'ANNIVERSARY', 'GENERAL'];
+        types.forEach(t => {
+            const panel = document.getElementById('extras-' + t);
+            if (panel) {
+                const isSelected = (t === type);
+                panel.classList.toggle('d-none', !isSelected);
+                panel.querySelectorAll('input, select, textarea').forEach(el => {
+                    el.disabled = !isSelected;
+                });
+            }
+        });
+    }
+
+    // Initialize on page load
+    (function () {
+        const sel = document.getElementById('cakeType');
+        showExtraFields(sel ? sel.value : '');
+    })();
+</script>
+</body>
+</html>
+
