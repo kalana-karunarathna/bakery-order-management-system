@@ -7,8 +7,8 @@
 <main id="main-content" class="container o-main">
 
     <nav class="o-back" aria-label="Breadcrumb">
-        <a th:href="${order != null} ? @{/orders/my-orders(customerId=${order.customerId})} : @{/orders/my-orders}">
-            <svg class="o-icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>My orders
+        <a th:href="${isAdmin} ? @{/orders/admin} : @{/orders/my-orders}">
+            <svg class="o-icon" aria-hidden="true"><use href="#i-arrow-left"/></svg><th:block th:text="${isAdmin} ? 'Order management' : 'My orders'">My orders</th:block>
         </a>
     </nav>
 
@@ -123,8 +123,8 @@
                             <dd th:text="'LKR ' + ${#numbers.formatDecimal(order.calculateTotal(), 1, 'COMMA', 2, 'POINT')}">LKR 2,650.00</dd></div>
                     </dl>
 
-                    <!-- Actions (customer may edit / cancel only while PENDING) -->
-                    <div th:if="${order.editable}" class="o-summary-actions">
+                    <!-- Actions: only the owner may edit / cancel, and only while PENDING (also enforced on the server). -->
+                    <div th:if="${order.editable and isOwner and !isAdmin}" class="o-summary-actions">
                         <a th:href="@{/orders/{id}/edit(id=${order.id})}" class="btn btn-o-primary w-100">
                             <svg class="o-icon" aria-hidden="true"><use href="#i-edit"/></svg>Edit Order
                         </a>
@@ -150,7 +150,14 @@
                         <svg class="o-icon" aria-hidden="true"><use href="#i-x-circle"/></svg>
                         <span>This order has been cancelled.</span>
                     </div>
-                    <a th:unless="${order.editable}" th:href="@{/orders/place}" class="btn btn-o-outline w-100 mt-3">Place a new order</a>
+                    <a th:if="${!order.editable and !isAdmin}" th:href="@{/orders/place}" class="btn btn-o-outline w-100 mt-3">Place a new order</a>
+                    <th:block th:if="${isAdmin}">
+                        <div th:if="${order.editable}" class="o-callout">
+                            <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                            <span>This order is <strong>Pending</strong>. Customers can still edit or cancel it.</span>
+                        </div>
+                        <a th:href="@{/orders/admin}" class="btn btn-o-primary w-100 mt-3">Manage status in Order management</a>
+                    </th:block>
                 </aside>
             </div>
         </div>

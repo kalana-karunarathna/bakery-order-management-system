@@ -14,38 +14,21 @@
         <div>
             <p class="o-eyebrow">Order history</p>
             <h1 class="o-title">My orders</h1>
-            <p class="o-subtitle">Look up your orders to check their progress, make changes or cancel.</p>
+            <p class="o-subtitle">Check the progress of your orders, make changes or cancel while they are pending.</p>
         </div>
         <a th:href="@{/orders/place}" class="btn btn-o-primary">
             <svg class="o-icon" aria-hidden="true"><use href="#i-bag"/></svg>Place New Order
         </a>
     </header>
 
-    <!-- Search -->
-    <section class="o-card o-search-card" aria-labelledby="search-title">
-        <h2 id="search-title" class="visually-hidden">Find your orders</h2>
-        <form th:action="@{/orders/my-orders}" method="get" class="o-search-form" role="search">
-            <label for="customerIdSearch" class="form-label">Customer ID</label>
-            <div class="o-search-row">
-                <div class="o-input-icon flex-grow-1">
-                    <svg class="o-icon" aria-hidden="true"><use href="#i-search"/></svg>
-                    <input type="text" class="form-control" id="customerIdSearch" name="customerId"
-                           placeholder="e.g. U001" th:value="${customerId}" required autocomplete="off"
-                           aria-describedby="customerIdSearch-hint">
-                </div>
-                <button type="submit" class="btn btn-o-primary">Find orders</button>
-            </div>
-            <div id="customerIdSearch-hint" class="form-text">Enter the customer ID you used when placing your order.</div>
-        </form>
-    </section>
-
+    <!-- Orders are always those of the signed-in customer; there is no customer ID input. -->
     <div th:replace="~{order/fragments/order-ui :: flash}"></div>
 
     <!-- Results -->
-    <section th:if="${orders != null and !orders.isEmpty()}" class="o-section" aria-labelledby="results-title">
+    <section th:if="${orders != null and !orders.isEmpty()}" class="o-section mt-0" aria-labelledby="results-title">
         <div class="o-results-head">
             <h2 id="results-title" class="o-section-title mb-0">
-                Orders for <span th:text="${customerId}">U001</span>
+                Orders for <span th:text="${customerName}">Nimal Perera</span>
             </h2>
             <span class="o-count-chip" th:text="${orders.size()} + (${orders.size() == 1} ? ' order' : ' orders')">3 orders</span>
         </div>
@@ -102,22 +85,12 @@
         </ul>
     </section>
 
-    <!-- Searched, nothing found -->
-    <section th:if="${orders != null and orders.isEmpty()}" class="o-empty" aria-live="polite">
+    <!-- No orders yet -->
+    <section th:if="${orders != null and orders.isEmpty()}" class="o-empty">
         <span class="o-empty-icon" aria-hidden="true"><svg class="o-icon"><use href="#i-receipt"/></svg></span>
-        <h2 class="o-empty-title">No orders found</h2>
-        <p class="o-empty-text">
-            We couldn't find any orders for customer <strong th:text="${customerId}">U001</strong>.
-            Check the ID and try again, or place your first order.
-        </p>
-        <a th:href="@{/orders/place}" class="btn btn-o-primary">Place an order</a>
-    </section>
-
-    <!-- Before searching -->
-    <section th:if="${orders == null and errorMessage == null}" class="o-empty">
-        <span class="o-empty-icon" aria-hidden="true"><svg class="o-icon"><use href="#i-search"/></svg></span>
-        <h2 class="o-empty-title">Find your orders</h2>
-        <p class="o-empty-text">Enter your customer ID above to see your order history and track current orders.</p>
+        <h2 class="o-empty-title">No orders yet</h2>
+        <p class="o-empty-text">When you place an order it will appear here, so you can follow it from the oven to your door.</p>
+        <a th:href="@{/orders/place}" class="btn btn-o-primary">Place your first order</a>
     </section>
 
 </main>

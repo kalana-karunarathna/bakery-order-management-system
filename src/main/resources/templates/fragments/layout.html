@@ -36,6 +36,7 @@
                 <ul class="navbar-nav ms-auto" sec:authorize="hasRole('ADMIN')">
                     <li class="nav-item"><a class="nav-link" th:href="@{/users/admin}">Admin dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" th:href="@{/users/admin/customers}">Customers</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/orders/admin}">Order management</a></li>
                     <li class="nav-item"><a class="nav-link" th:href="@{/}">View site</a></li>
                 </ul>
 
@@ -55,6 +56,7 @@
                                       sec:authentication="principal.email">email</span></li>
                             <li><hr class="dropdown-divider"></li>
                             <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/users/admin}">Admin dashboard</a></li>
+                            <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/orders/admin}">Order management</a></li>
                             <li><a class="dropdown-item" th:href="@{/profile}"
                                    th:text="${#authorization.expression('hasRole(''ADMIN'')')} ? 'Admin profile' : 'My account'">My account</a></li>
                             <li sec:authorize="hasRole('CUSTOMER')"><a class="dropdown-item" th:href="@{${myOrdersUrl}}">My orders</a></li>

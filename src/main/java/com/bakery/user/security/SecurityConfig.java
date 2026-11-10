@@ -22,10 +22,12 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
  *       static assets, error and access-denied pages.</li>
  *   <li>Signed-in users: {@code /profile/**} (always the signed-in user's own account).</li>
  *   <li>ADMIN only: {@code /users/admin/**}.</li>
- *   <li><b>TEMPORARY:</b> {@code /products}, {@code /orders}, {@code /cake-bookings},
- *       {@code /payments}, {@code /feedback} and everything below them stay public so other
- *       modules keep working. Each module must add its own rules when it integrates sign-in
- *       (e.g. Order admin routes should become ADMIN-only). See docs/USER_MANAGEMENT.md.</li>
+ *   <li>Orders: {@code /orders} landing is public; placing, listing, editing and cancelling own
+ *       orders is CUSTOMER-only; {@code /orders/admin}, status changes and deletion are ADMIN-only;
+ *       order detail requires sign-in (owner or ADMIN, checked in OrderService).</li>
+ *   <li><b>TEMPORARY:</b> {@code /products}, {@code /cake-bookings}, {@code /payments},
+ *       {@code /feedback} and everything below them stay public so other modules keep working.
+ *       Each module must add its own rules when it integrates sign-in. See docs/USER_MANAGEMENT.md.</li>
  *   <li>Anything else requires sign-in.</li>
  * </ul>
  *
@@ -40,7 +42,6 @@ public class SecurityConfig {
     /** TEMPORARY public routes of modules that have not integrated authentication yet. */
     static final String[] OTHER_MODULE_ROUTES = {
             "/products", "/products/**",
-            "/orders", "/orders/**",
             "/cake-bookings", "/cake-bookings/**",
             "/payments", "/payments/**",
             "/feedback", "/feedback/**"
@@ -77,6 +78,11 @@ public class SecurityConfig {
                 .requestMatchers("/", "/users", "/login", "/register").permitAll()
                 .requestMatchers("/users/admin", "/users/admin/**").hasRole("ADMIN")
                 .requestMatchers("/profile", "/profile/**").authenticated()
+                // Order Management (Component 03). Ownership of individual orders is checked in OrderService.
+                .requestMatchers("/orders/admin", "/orders/admin/**", "/orders/*/status", "/orders/*/delete").hasRole("ADMIN")
+                .requestMatchers("/orders/place", "/orders/my-orders", "/orders/*/edit", "/orders/*/cancel").hasRole("CUSTOMER")
+                .requestMatchers("/orders").permitAll()
+                .requestMatchers("/orders/**").authenticated()
                 .requestMatchers(OTHER_MODULE_ROUTES).permitAll()
                 .anyRequest().authenticated())
             .formLogin(form -> form

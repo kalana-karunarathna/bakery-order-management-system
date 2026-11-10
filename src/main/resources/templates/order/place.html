@@ -20,11 +20,11 @@
     <div th:replace="~{order/fragments/order-ui :: flash}"></div>
 
     <!--
-      Field names and the form action are unchanged: customerId, productId, productName,
-      quantity, unitPrice, orderType, deliveryAddress -> POST /orders/place.
-      NOTE: unitPrice is still submitted by the browser and accepted by OrderService.
-      Once the Product component exposes its catalogue, the server should look up the
-      price by productId instead of trusting this value.
+      POST /orders/place with productId, productName, quantity, unitPrice, orderType, deliveryAddress.
+      There is deliberately NO customerId field: the server uses the signed-in customer.
+      NOTE: unitPrice is still entered here (bounded and validated by OrderService; the total is
+      always calculated on the server). Once Product Management exposes its catalogue, the server
+      must look up the price by productId instead of accepting this value.
     -->
     <form th:action="@{/orders/place}" method="post" novalidate id="orderForm"
           class="o-order-form" data-order-form="place"
@@ -40,20 +40,23 @@
                         <span class="o-step-num" aria-hidden="true">1</span>
                         <div>
                             <h2 id="sec-customer" class="o-card-title">Your details</h2>
-                            <p class="o-card-sub">We use your customer ID to link this order to your account.</p>
+                            <p class="o-card-sub">This order will be added to your account automatically.</p>
                         </div>
                     </div>
-                    <div class="o-field">
-                        <label for="customerId" class="form-label">Customer ID <span class="o-req" aria-hidden="true">*</span></label>
-                        <div class="o-input-icon">
-                            <svg class="o-icon" aria-hidden="true"><use href="#i-user"/></svg>
-                            <input type="text" class="form-control" id="customerId" name="customerId"
-                                   placeholder="e.g. U001" required autocomplete="off" maxlength="40"
-                                   aria-describedby="customerId-hint customerId-error">
+                    <!-- Read-only: identity comes from the signed-in session, not from this form. -->
+                    <div class="o-account-card">
+                        <span class="o-account-avatar" aria-hidden="true" th:text="${customer.initials()}">NP</span>
+                        <div class="o-account-info">
+                            <strong th:text="${customer.fullName}">Nimal Perera</strong>
+                            <span th:text="${customer.email}">nimal@example.com</span>
+                            <span th:if="${!#strings.isEmpty(customer.phone)}" th:text="${customer.phone}">077 123 4567</span>
                         </div>
-                        <div id="customerId-hint" class="form-text">Your registered customer ID.</div>
-                        <div id="customerId-error" class="o-field-error" aria-live="polite"></div>
+                        <span class="o-account-id">
+                            <span class="visually-hidden">Customer ID</span>
+                            <span class="o-mono" th:text="${customer.id}">U003</span>
+                        </span>
                     </div>
+                    <p class="form-text mb-0">Not you? <a th:href="@{/profile}">Check your account</a>.</p>
                 </section>
 
                 <!-- 2. Product -->
@@ -77,14 +80,14 @@
                             <label for="productId" class="form-label">Product ID <span class="o-req" aria-hidden="true">*</span></label>
                             <input type="text" class="form-control" id="productId" name="productId"
                                    placeholder="e.g. P001" required autocomplete="off" maxlength="40"
-                                   aria-describedby="productId-error">
+                                   th:value="${form.productId}" aria-describedby="productId-error">
                             <div id="productId-error" class="o-field-error" aria-live="polite"></div>
                         </div>
                         <div class="col-sm-7 o-field">
                             <label for="productName" class="form-label">Product name <span class="o-req" aria-hidden="true">*</span></label>
                             <input type="text" class="form-control" id="productName" name="productName"
                                    placeholder="e.g. Chocolate Fudge Cake" required autocomplete="off" maxlength="100"
-                                   aria-describedby="productName-error">
+                                   th:value="${form.productName}" aria-describedby="productName-error">
                             <div id="productName-error" class="o-field-error" aria-live="polite"></div>
                         </div>
                         <div class="col-sm-6 o-field">
@@ -92,8 +95,8 @@
                             <div class="input-group o-input-group">
                                 <span class="input-group-text">LKR</span>
                                 <input type="number" class="form-control" id="unitPrice" name="unitPrice"
-                                       min="0.01" step="0.01" placeholder="0.00" required inputmode="decimal"
-                                       aria-describedby="unitPrice-error">
+                                       min="0.01" max="100000" step="0.01" placeholder="0.00" required inputmode="decimal"
+                                       th:value="${form.unitPrice}" aria-describedby="unitPrice-error">
                             </div>
                             <div id="unitPrice-error" class="o-field-error" aria-live="polite"></div>
                         </div>
@@ -104,7 +107,7 @@
                                     <svg class="o-icon" aria-hidden="true"><use href="#i-minus"/></svg>
                                 </button>
                                 <input type="number" class="form-control" id="quantity" name="quantity"
-                                       min="1" step="1" value="1" required inputmode="numeric"
+                                       min="1" max="100" step="1" th:value="${form.quantity}" required inputmode="numeric"
                                        aria-describedby="quantity-error">
                                 <button type="button" class="o-stepper-btn" data-step="1" aria-label="Increase quantity">
                                     <svg class="o-icon" aria-hidden="true"><use href="#i-plus"/></svg>
@@ -128,7 +131,8 @@
                     <fieldset class="o-choice-group">
                         <legend class="visually-hidden">Order type</legend>
                         <div class="o-choice">
-                            <input type="radio" name="orderType" id="typePickup" value="PICKUP" checked>
+                            <input type="radio" name="orderType" id="typePickup" value="PICKUP"
+                                   th:checked="${form.orderType != 'DELIVERY'}">
                             <label for="typePickup">
                                 <svg class="o-icon" aria-hidden="true"><use href="#i-store"/></svg>
                                 <span class="o-choice-text">
@@ -139,7 +143,8 @@
                             </label>
                         </div>
                         <div class="o-choice">
-                            <input type="radio" name="orderType" id="typeDelivery" value="DELIVERY">
+                            <input type="radio" name="orderType" id="typeDelivery" value="DELIVERY"
+                                   th:checked="${form.orderType == 'DELIVERY'}">
                             <label for="typeDelivery">
                                 <svg class="o-icon" aria-hidden="true"><use href="#i-truck"/></svg>
                                 <span class="o-choice-text">
@@ -159,9 +164,10 @@
                             <svg class="o-icon" aria-hidden="true"><use href="#i-pin"/></svg>
                             <textarea class="form-control" id="deliveryAddress" name="deliveryAddress" rows="3"
                                       placeholder="House number, street, city" maxlength="250"
+                                      th:text="${form.deliveryAddress}"
                                       aria-describedby="deliveryAddress-hint deliveryAddress-error"></textarea>
                         </div>
-                        <div id="deliveryAddress-hint" class="form-text">Required for delivery orders.</div>
+                        <div id="deliveryAddress-hint" class="form-text">Required for delivery orders. Pre-filled from your profile.</div>
                         <div id="deliveryAddress-error" class="o-field-error" aria-live="polite"></div>
                     </div>
                 </section>

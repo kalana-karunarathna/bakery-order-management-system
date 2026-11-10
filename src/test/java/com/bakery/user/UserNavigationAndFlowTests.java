@@ -108,7 +108,7 @@ class UserNavigationAndFlowTests {
                 .andExpect(content().string(allOf(
                         containsString("My Orders"), containsString("Alice Perera"),
                         containsString("My account"), containsString("Log out"),
-                        containsString("href=\"/orders\""),                // My Orders target on this branch
+                        containsString("href=\"/orders/my-orders\""),       // My Orders target
                         not(containsString("Create account")), not(containsString(">Sign in<")),
                         not(containsString("Admin dashboard")), not(containsString("href=\"/users/admin")))));
     }

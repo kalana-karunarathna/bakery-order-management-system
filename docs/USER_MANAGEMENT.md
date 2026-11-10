@@ -52,9 +52,12 @@ Signed-in users who open `/login` or `/register` are sent to `/profile`.
 The shared footer links to all six module pages for everyone, so other modules stay reachable.
 
 **My Orders** points to `${@navigation.myOrdersUrl}` (`NavigationLinks`), configured by
-`bakery.nav.my-orders-url`. On this branch it is `/orders` (the page that exists here).
-`/orders/my-orders` only exists on `feature/order-management`; after merging, set
-`bakery.nav.my-orders-url=/orders/my-orders`.
+`bakery.nav.my-orders-url`, now `/orders/my-orders` (Order Management is integrated on `dev`).
+
+The premium storefront header (`fragments/storefront.html`, used by the homepage and customer order
+pages) has the same role states: visitors see Sign in / Create account; customers see My Orders,
+"Order now" and an account menu (My account, My orders, Log out); admins see Admin dashboard,
+Customers, Order management and View site, plus an account menu. Log out is always a CSRF POST.
 
 **Admin layout** (`templates/fragments/admin.html` + `static/css/admin.css`): dark top bar and a
 sidebar (Dashboard, Customers, Products, Orders, Custom Cake Bookings, Payments, Feedback,
@@ -122,14 +125,16 @@ the tracked `data/users.txt`.
 
 ### Temporary access rules (must be revisited)
 
-`SecurityConfig.OTHER_MODULE_ROUTES` keeps `/products/**`, `/orders/**`, `/cake-bookings/**`,
-`/payments/**` and `/feedback/**` **public** so the other modules keep working while they have no
-sign-in integration. This is not secure for their admin/management actions. Each module should add
-its own rules when integrating, for example:
+`SecurityConfig.OTHER_MODULE_ROUTES` keeps `/products/**`, `/cake-bookings/**`, `/payments/**`
+and `/feedback/**` **public** so those modules keep working while they have no sign-in integration.
+This is not secure for their admin/management actions, so the site as a whole is **not** fully
+secured yet. Each module should add its own rules when integrating, as Orders now does:
 
 ```java
-.requestMatchers("/orders/admin", "/orders/*/status", "/orders/*/delete").hasRole("ADMIN")
-.requestMatchers("/orders/place", "/orders/my-orders", "/orders/*/edit", "/orders/*/cancel").authenticated()
+.requestMatchers("/orders/admin", "/orders/admin/**", "/orders/*/status", "/orders/*/delete").hasRole("ADMIN")
+.requestMatchers("/orders/place", "/orders/my-orders", "/orders/*/edit", "/orders/*/cancel").hasRole("CUSTOMER")
+.requestMatchers("/orders").permitAll()
+.requestMatchers("/orders/**").authenticated()   // detail: owner or admin, checked in OrderService
 ```
 
 Any form that posts with a plain `action="..."` (not `th:action`) will be rejected with 403 because
@@ -218,41 +223,25 @@ boolean mine = currentUserService.isCurrentUser(order.getCustomerId());
 It is read fresh from `users.txt` on each call. Alternatively use
 `@AuthenticationPrincipal BakeryUserPrincipal principal` in a controller.
 
-### Premium storefront header (on `feature/order-management`)
-
-The storefront header in `templates/fragments/storefront.html` currently shows a disabled cart and an
-Account icon linking to `/users`. When the branches are merged, give it the same auth states as the
-shared header (add `xmlns:sec="http://www.thymeleaf.org/extras/spring-security"`):
-
-```html
-<!-- Visitor -->
-<a sec:authorize="!isAuthenticated()" th:href="@{/login}">Sign in</a>
-<a sec:authorize="!isAuthenticated()" th:href="@{/register}">Create account</a>
-<!-- Customer: name + menu -->
-<div sec:authorize="hasRole('CUSTOMER')"> <span sec:authentication="principal.fullName"></span>
-    <a th:href="@{/profile}">My account</a> <a th:href="@{/orders/my-orders}">My orders</a> ... </div>
-<!-- Admin -->
-<a sec:authorize="hasRole('ADMIN')" th:href="@{/users/admin}">Admin dashboard</a>
-<!-- Logout must be a POST form (CSRF token via th:action) -->
-<form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post"><button>Log out</button></form>
-```
-
-Keep the "My Orders" item hidden for visitors, and use `th:action` on every form.
 Thymeleaf 3.1 does not allow `${param...}` or `${@bean...}` directly inside `th:attr` or `@{...}`
-links; read them into a variable with `th:with` first (see `layout.html`).
+links; read them into a variable with `th:with` first (see `layout.html` and `storefront.html`).
 
-### What Order Management should change (not done in this task)
+### Order Management integration (done on `dev`)
 
-Order Management currently accepts a typed `customerId`; this is **not secure**. When integrating:
+| Rule | Where it is enforced |
+| --- | --- |
+| Placing, listing, editing, cancelling own orders: CUSTOMER only | `SecurityConfig` + `@PreAuthorize` on `OrderController` |
+| Customer ID always from the session (`CurrentUserService`); no `customerId` form field or parameter is read | `OrderController` |
+| Customers only see/change their own orders; others' orders are reported as "Order not found" (no IDOR, no ID probing) | `OrderService.getOrderFor/getOwnOrder/updateOwnOrder/cancelOwnOrder` |
+| Edit and cancel only while PENDING | `OrderService` |
+| `/orders/admin`, status updates, deletion: ADMIN only | `SecurityConfig` + `@PreAuthorize` |
+| Status workflow: Pending → Preparing → Ready → Delivered, or Cancelled before delivery; Delivered/Cancelled are final | `OrderService.TRANSITIONS` |
+| Totals always calculated on the server; quantity 1–100; unit price bounded; `\|` and line breaks refused | `OrderService`, `OrderRepository` |
 
-1. Take the customer ID from `currentUserService.requireCurrentUser().id()`; remove the
-   `customerId` form field and request parameter.
-2. `/orders/my-orders` lists only that customer's orders.
-3. Order detail / edit / cancel check `order.getCustomerId()` equals the signed-in ID (or the user is ADMIN); otherwise 403.
-4. Status updates and deletion become ADMIN-only (URL rules in `SecurityConfig` plus a service check).
-5. To apply loyalty discounts, load the customer and call `calculateDiscount(subtotal)`; store the
-   discount on the order rather than recalculating old orders.
-6. Set `bakery.nav.my-orders-url=/orders/my-orders` so the header's "My Orders" opens the real page,
-   and point the admin sidebar's "Orders" entry (`fragments/admin.html`) at `/orders/admin`.
-7. Replace the temporary public `/orders/**` rule in `SecurityConfig.OTHER_MODULE_ROUTES` with
-   role rules (see "Temporary access rules" above). Until then the site is **not** fully secured.
+Still open (needs other modules):
+
+1. **Product Management:** product ID, name and unit price are typed on the order form. The server
+   must look the price up by product ID once a product catalogue service exists.
+2. **Payment Management:** no payment is taken or recorded for orders.
+3. **Loyalty discounts:** `LoyaltyCustomer.calculateDiscount` is not applied to orders yet; when it is,
+   store the discount on the order rather than recalculating old orders.

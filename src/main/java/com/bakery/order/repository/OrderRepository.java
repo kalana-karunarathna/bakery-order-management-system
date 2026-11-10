@@ -2,13 +2,19 @@ package com.bakery.order.repository;
 
 import com.bakery.common.TextFileStorage;
 import com.bakery.order.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * File-backed repository for orders.
@@ -19,48 +25,53 @@ import java.util.Optional;
  *    | orderType  | deliveryAddress | status | orderDate
  * </pre>
  * <p>deliveryAddress is stored as an empty field for pickup orders.</p>
+ *
+ * <p>Safety: every read-modify-write runs under one lock, writes replace the file atomically,
+ * lines that cannot be parsed are kept unchanged (and their IDs are never reused), and fields
+ * containing {@code |} or line breaks are refused instead of corrupting the file.</p>
  */
 @Repository
 public class OrderRepository {
 
-    private static final String FILE_NAME = "orders.txt";
+    public static final String FILE_NAME = "orders.txt";
+    private static final String HEADER =
+            "# id|customerId|productId|productName|quantity|unitPrice|orderType|deliveryAddress|status|orderDate";
+    private static final String UNREADABLE_NOTE = "# Unreadable records kept unchanged below; fix or remove them manually.";
     private static final String DELIMITER = "\\|";
     private static final String WRITE_DELIMITER = "|";
+    private static final Pattern ID_NUMBER = Pattern.compile("^O(\\d+)$");
+
+    private static final Logger log = LoggerFactory.getLogger(OrderRepository.class);
 
     private final TextFileStorage storage;
+    private final Object lock = new Object();
 
     public OrderRepository(TextFileStorage storage) {
         this.storage = storage;
     }
 
+    private record Snapshot(List<Order> orders, List<String> unreadable) {
+    }
+
     // ── Read ──────────────────────────────────────────────────────────────────
 
-    /** Returns every order in the file, skipping blank lines and comments. */
+    /** Returns every readable order in the file, skipping blank lines and comments. */
     public List<Order> findAll() throws IOException {
-        List<Order> orders = new ArrayList<>();
-        List<String> lines;
-        try {
-            lines = storage.readLines(FILE_NAME);
-        } catch (IOException e) {
-            return orders; // file not yet created
+        synchronized (lock) {
+            return new ArrayList<>(load().orders());
         }
-        for (String line : lines) {
-            if (line.isBlank() || line.startsWith("#")) continue;
-            Order o = parseLine(line);
-            if (o != null) orders.add(o);
-        }
-        return orders;
     }
 
     /** Finds a single order by its ID, e.g. {@code O001}. */
     public Optional<Order> findById(String id) throws IOException {
+        if (id == null) return Optional.empty();
         return findAll().stream().filter(o -> o.getId().equals(id)).findFirst();
     }
 
-    /** Returns all orders placed by a given customer. */
+    /** Returns all orders placed by a given customer (exact ID match). */
     public List<Order> findByCustomerId(String customerId) throws IOException {
         return findAll().stream()
-                .filter(o -> o.getCustomerId().equalsIgnoreCase(customerId))
+                .filter(o -> o.getCustomerId().equals(customerId))
                 .toList();
     }
 
@@ -72,30 +83,48 @@ public class OrderRepository {
      * @return the saved order with its assigned ID
      */
     public Order save(Order order) throws IOException {
-        List<Order> all = findAll();
-        order.setId(nextId(all));
-        all.add(order);
-        writeAll(all);
-        return order;
+        synchronized (lock) {
+            Snapshot snapshot = load();
+            order.setId(nextId(snapshot));
+            List<Order> all = new ArrayList<>(snapshot.orders());
+            all.add(order);
+            writeAll(all, snapshot.unreadable());
+            return order;
+        }
     }
 
     /**
      * Replaces an existing order record identified by {@code order.getId()}.
      *
-     * @throws IllegalArgumentException if the ID is not found
+     * @throws java.util.NoSuchElementException if the ID is not found
      */
     public void update(Order order) throws IOException {
-        List<Order> all = findAll();
-        boolean found = false;
-        for (int i = 0; i < all.size(); i++) {
-            if (all.get(i).getId().equals(order.getId())) {
-                all.set(i, order);
-                found = true;
-                break;
+        update(order.getId(), current -> order);
+    }
+
+    /**
+     * Loads the latest copy of an order, applies {@code change} and saves it, all under the lock,
+     * so a customer edit and an admin status change cannot overwrite each other.
+     *
+     * @throws java.util.NoSuchElementException if the ID is not found
+     */
+    public Order update(String id, UnaryOperator<Order> change) throws IOException {
+        synchronized (lock) {
+            Snapshot snapshot = load();
+            List<Order> all = new ArrayList<>(snapshot.orders());
+            for (int i = 0; i < all.size(); i++) {
+                if (all.get(i).getId().equals(id)) {
+                    Order updated = change.apply(all.get(i));
+                    if (updated == null || !id.equals(updated.getId())) {
+                        throw new IllegalStateException("An update must keep the order ID.");
+                    }
+                    all.set(i, updated);
+                    writeAll(all, snapshot.unreadable());
+                    return updated;
+                }
             }
+            throw new java.util.NoSuchElementException("Order not found: " + id);
         }
-        if (!found) throw new IllegalArgumentException("Order not found: " + order.getId());
-        writeAll(all);
     }
 
     /**
@@ -104,73 +133,125 @@ public class OrderRepository {
      * is intended for admin use only.
      */
     public void delete(String id) throws IOException {
-        List<Order> all = findAll();
-        List<Order> filtered = all.stream().filter(o -> !o.getId().equals(id)).toList();
-        if (filtered.size() == all.size()) {
-            throw new IllegalArgumentException("Order not found: " + id);
+        synchronized (lock) {
+            Snapshot snapshot = load();
+            List<Order> filtered = snapshot.orders().stream().filter(o -> !o.getId().equals(id)).toList();
+            if (filtered.size() == snapshot.orders().size()) {
+                throw new java.util.NoSuchElementException("Order not found: " + id);
+            }
+            writeAll(filtered, snapshot.unreadable());
         }
-        writeAll(filtered);
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────
 
+    private Snapshot load() throws IOException {
+        List<String> lines;
+        try {
+            lines = storage.readLines(FILE_NAME);
+        } catch (NoSuchFileException e) {
+            return new Snapshot(List.of(), List.of()); // file not yet created
+        }
+        List<Order> orders = new ArrayList<>();
+        List<String> unreadable = new ArrayList<>();
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.isBlank() || line.startsWith("#")) continue;
+            Order o = parseLine(line);
+            if (o == null || orders.stream().anyMatch(existing -> existing.getId().equals(o.getId()))) {
+                // Position only: the line may contain customer data.
+                log.warn("orders.txt line {} could not be read and is kept unchanged.", i + 1);
+                unreadable.add(line);
+            } else {
+                orders.add(o);
+            }
+        }
+        return new Snapshot(orders, unreadable);
+    }
+
     private Order parseLine(String line) {
         String[] parts = line.split(DELIMITER, -1);
-        if (parts.length < 10) return null;
+        if (parts.length != 10) return null;
+        try {
+            String id            = parts[0].trim();
+            String customerId    = parts[1].trim();
+            String productId     = parts[2].trim();
+            String productName   = parts[3].trim();
+            int    quantity      = Integer.parseInt(parts[4].trim());
+            double unitPrice     = Double.parseDouble(parts[5].trim());
+            OrderType orderType  = OrderType.valueOf(parts[6].trim());
+            String deliveryAddr  = parts[7].trim();
+            OrderStatus status   = OrderStatus.valueOf(parts[8].trim());
+            LocalDate orderDate  = LocalDate.parse(parts[9].trim());
+            if (id.isEmpty() || customerId.isEmpty()) return null;
 
-        String id            = parts[0].trim();
-        String customerId    = parts[1].trim();
-        String productId     = parts[2].trim();
-        String productName   = parts[3].trim();
-        int    quantity      = Integer.parseInt(parts[4].trim());
-        double unitPrice     = Double.parseDouble(parts[5].trim());
-        OrderType orderType  = OrderType.valueOf(parts[6].trim());
-        String deliveryAddr  = parts[7].trim();
-        OrderStatus status   = OrderStatus.valueOf(parts[8].trim());
-        LocalDate orderDate  = LocalDate.parse(parts[9].trim());
-
-        if (orderType == OrderType.DELIVERY) {
-            return new DeliveryOrder(id, customerId, productId, productName,
-                                     quantity, unitPrice, deliveryAddr, status, orderDate);
-        } else {
+            if (orderType == OrderType.DELIVERY) {
+                return new DeliveryOrder(id, customerId, productId, productName,
+                                         quantity, unitPrice, deliveryAddr, status, orderDate);
+            }
             return new PickupOrder(id, customerId, productId, productName,
                                    quantity, unitPrice, status, orderDate);
+        } catch (RuntimeException e) {
+            return null;
         }
     }
 
-    private String serialise(Order o) {
+    static String serialise(Order o) {
         String deliveryAddress = (o instanceof DeliveryOrder d) ? d.getDeliveryAddress() : "";
-        return String.join(WRITE_DELIMITER,
+        String[] fields = {
                 o.getId(),
                 o.getCustomerId(),
                 o.getProductId(),
                 o.getProductName(),
                 String.valueOf(o.getQuantity()),
-                String.format("%.2f", o.getUnitPrice()),
+                String.format(java.util.Locale.ROOT, "%.2f", o.getUnitPrice()),
                 o.getOrderType().name(),
-                deliveryAddress,
+                deliveryAddress == null ? "" : deliveryAddress,
                 o.getStatus().name(),
                 o.getOrderDate().toString()
-        );
+        };
+        for (String field : fields) {
+            if (field == null || containsUnsafeCharacters(field)) {
+                // Defence in depth: OrderService validation should already have refused this.
+                throw new IllegalStateException("Refusing to save an order field containing | or a line break.");
+            }
+        }
+        return String.join(WRITE_DELIMITER, fields);
     }
 
-    private void writeAll(List<Order> orders) throws IOException {
+    /** True for the delimiter, line breaks and other control characters. */
+    public static boolean containsUnsafeCharacters(String value) {
+        if (value == null) return false;
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '|' || Character.isISOControl(c) || c == ' ' || c == ' ') return true;
+        }
+        return false;
+    }
+
+    private void writeAll(List<Order> orders, List<String> unreadable) throws IOException {
         List<String> lines = new ArrayList<>();
-        lines.add("# id|customerId|productId|productName|quantity|unitPrice|orderType|deliveryAddress|status|orderDate");
+        lines.add(HEADER);
         for (Order o : orders) {
             lines.add(serialise(o));
         }
-        storage.writeLines(FILE_NAME, lines);
+        if (!unreadable.isEmpty()) {
+            lines.add(UNREADABLE_NOTE);
+            lines.addAll(unreadable);
+        }
+        storage.writeLinesAtomically(FILE_NAME, lines);
     }
 
-    /** Generates the next ID in the sequence O001, O002, … */
-    private String nextId(List<Order> existing) {
-        int max = existing.stream()
-                .mapToInt(o -> {
-                    try { return Integer.parseInt(o.getId().substring(1)); }
-                    catch (NumberFormatException e) { return 0; }
-                })
-                .max().orElse(0);
+    /** Next ID after the highest ever seen (including unreadable lines): O001, O002, … */
+    private static String nextId(Snapshot snapshot) {
+        int max = 0;
+        for (Order o : snapshot.orders()) max = Math.max(max, idNumber(o.getId()));
+        for (String line : snapshot.unreadable()) max = Math.max(max, idNumber(line.split(DELIMITER, 2)[0].trim()));
         return String.format("O%03d", max + 1);
+    }
+
+    private static int idNumber(String id) {
+        Matcher m = ID_NUMBER.matcher(id);
+        return m.matches() ? Integer.parseInt(m.group(1)) : 0;
     }
 }

@@ -35,6 +35,7 @@
         const q = Number(raw);
         if (!Number.isInteger(q)) return "Quantity must be a whole number.";
         if (q < 1) return "Quantity must be at least 1.";
+        if (q > 100) return "For more than 100 items, please contact the bakery.";
         return "";
     }
 
@@ -88,7 +89,6 @@
     if (placeForm) {
         const fee = num(placeForm.dataset.deliveryFee) || 0;
         const f = {
-            customerId: placeForm.querySelector("#customerId"),
             productId: placeForm.querySelector("#productId"),
             productName: placeForm.querySelector("#productName"),
             quantity: placeForm.querySelector("#quantity"),
@@ -154,7 +154,6 @@
         placeForm.addEventListener("submit", (event) => {
             const required = (label) => (field) => (field.value.trim() === "" ? `Please enter ${label}.` : "");
             const ok = validate(placeForm, [
-                [f.customerId, required("your customer ID")],
                 [f.productId, required("the product ID")],
                 [f.productName, required("the product name")],
                 [f.unitPrice, (field) => {

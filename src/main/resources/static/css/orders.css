@@ -332,6 +332,21 @@
     background: var(--o-primary); color: #fff;
 }
 
+/* Signed-in customer shown on the place-order form (read-only). */
+.order-ui .o-account-card {
+    display: flex; align-items: center; gap: .9rem; padding: .9rem 1rem; margin-bottom: .6rem;
+    border-radius: var(--o-radius-sm); background: var(--o-bg); border: 1px solid var(--o-border);
+}
+.order-ui .o-account-avatar {
+    width: 2.75rem; height: 2.75rem; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
+    font-family: var(--o-font-display); font-weight: 700; color: var(--o-primary);
+    background: linear-gradient(140deg, #F7E3D0, #E3B98F);
+}
+.order-ui .o-account-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.order-ui .o-account-info strong { color: var(--o-dark); }
+.order-ui .o-account-info span { color: var(--o-muted); font-size: .88rem; overflow-wrap: anywhere; }
+.order-ui .o-account-id { font-size: .82rem; font-weight: 600; color: var(--o-primary); background: var(--o-primary-soft); border-radius: 999px; padding: .2rem .65rem; }
+
 .order-ui .o-integration-note {
     display: flex; gap: .55rem; align-items: flex-start;
     font-size: .84rem; color: var(--o-muted);
@@ -615,6 +630,17 @@
 .order-ui .o-table-product { font-weight: 600; max-width: 16rem; overflow-wrap: anywhere; }
 .order-ui .o-table-sub { display: block; font-size: .78rem; color: var(--o-muted); }
 .order-ui .o-status-form { display: flex; gap: .4rem; align-items: center; }
+
+/* Inside the admin layout (sidebar takes space): compact table that fits laptop widths. */
+@media (min-width: 992px) {
+    .admin-ui.order-ui .o-table th, .admin-ui.order-ui .o-table td { padding: .7rem .6rem; }
+    .admin-ui.order-ui .o-table th:first-child, .admin-ui.order-ui .o-table td:first-child { padding-left: 1.1rem; }
+    .admin-ui.order-ui .o-table-product { min-width: 9rem; overflow-wrap: normal; }
+    .admin-ui.order-ui .o-table td[data-label="Date"] { white-space: nowrap; }
+    .admin-ui.order-ui .o-status-form .form-select { min-width: 7.5rem; }
+    .admin-ui.order-ui .o-table-sub .o-type { font-size: .78rem; color: var(--o-muted); }
+}
+.order-ui .form-text a { color: var(--o-primary); font-weight: 600; }
 .order-ui .o-status-form .form-select { min-width: 8.5rem; }
 .order-ui .o-row-actions { white-space: nowrap; text-align: right; }
 .order-ui .o-row-actions > * + * { margin-left: .35rem; }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <!--
   Customer-facing storefront fragments (homepage + customer Order Management pages).
 
@@ -40,10 +40,11 @@
 </svg>
 
 <!--
-  Customer navigation. `active` is one of: home, shop, cakes, orders (or '' for none).
-  Admin links are deliberately NOT in this header (see footer "Staff" column).
+  Storefront navigation, aware of the signed-in role. `active` is one of: home, shop, cakes, orders ('' for none).
+  Showing or hiding links is cosmetic only: every protected route is enforced by SecurityConfig and @PreAuthorize.
 -->
-<header th:fragment="header(active)" class="sf-header">
+<header th:fragment="header(active)" class="sf-header"
+        th:with="myOrdersUrl=${@navigation.myOrdersUrl}">
     <a class="skip-link btn btn-light" href="#main-content">Skip to content</a>
     <nav class="navbar navbar-expand-lg sf-nav" aria-label="Main navigation">
         <div class="container">
@@ -57,14 +58,52 @@
 
             <div class="sf-nav-tools">
                 <!-- Not a link or button on purpose: the cart is not implemented yet (future integration). -->
-                <span class="sf-icon-btn is-disabled" role="img" aria-label="Cart, coming soon" title="Cart: coming soon">
+                <span sec:authorize="!hasRole('ADMIN')" class="sf-icon-btn is-disabled" role="img"
+                      aria-label="Cart, coming soon" title="Cart: coming soon">
                     <svg class="sf-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9L5 8Z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>
                     <span class="sf-soon" aria-hidden="true">Soon</span>
                 </span>
-                <a class="sf-icon-btn" th:href="@{/users}" title="Account">
+
+                <!-- Visitor: account icon goes to sign in -->
+                <a sec:authorize="!isAuthenticated()" class="sf-icon-btn d-lg-none" th:href="@{/login}" title="Sign in">
                     <svg class="sf-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
-                    <span class="visually-hidden">Account</span>
+                    <span class="visually-hidden">Sign in</span>
                 </a>
+
+                <!-- Signed in: account menu -->
+                <div sec:authorize="isAuthenticated()" class="dropdown sf-account">
+                    <button class="sf-account-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                            id="sf-account-button">
+                        <span class="sf-account-avatar" aria-hidden="true"
+                              th:text="${#strings.toUpperCase(#strings.substring(#authentication.principal.fullName, 0, 1))}">N</span>
+                        <span class="visually-hidden">Account menu for </span>
+                        <span class="sf-account-name" sec:authentication="principal.fullName">Account</span>
+                        <svg class="sf-icon sf-account-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end sf-dropdown" aria-labelledby="sf-account-button">
+                        <li class="sf-dropdown-head">
+                            <strong sec:authentication="principal.fullName">Name</strong>
+                            <span sec:authentication="principal.email">email</span>
+                        </li>
+                        <th:block sec:authorize="hasRole('ADMIN')">
+                            <li><a class="dropdown-item" th:href="@{/users/admin}">Admin dashboard</a></li>
+                            <li><a class="dropdown-item" th:href="@{/orders/admin}">Order management</a></li>
+                            <li><a class="dropdown-item" th:href="@{/profile}">Admin profile</a></li>
+                        </th:block>
+                        <th:block sec:authorize="hasRole('CUSTOMER')">
+                            <li><a class="dropdown-item" th:href="@{/profile}">My account</a></li>
+                            <li><a class="dropdown-item" th:href="@{${myOrdersUrl}}">My orders</a></li>
+                        </th:block>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <!-- POST with CSRF token (th:action) -->
+                            <form th:action="@{/logout}" method="post" class="m-0">
+                                <button type="submit" class="dropdown-item sf-logout">Log out</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+
                 <button class="sf-toggler navbar-toggler" type="button" data-bs-toggle="collapse"
                         data-bs-target="#sf-navigation" aria-controls="sf-navigation"
                         aria-expanded="false" aria-label="Toggle navigation">
@@ -73,7 +112,8 @@
             </div>
 
             <div class="collapse navbar-collapse" id="sf-navigation">
-                <ul class="navbar-nav sf-nav-links">
+                <!-- Visitors and customers -->
+                <ul class="navbar-nav sf-nav-links" sec:authorize="!hasRole('ADMIN')">
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/}" th:classappend="${active == 'home'} ? 'is-active'"
                            th:attr="aria-current=${active == 'home'} ? 'page'">Home</a>
@@ -86,12 +126,24 @@
                         <a class="nav-link" th:href="@{/cake-bookings}" th:classappend="${active == 'cakes'} ? 'is-active'"
                            th:attr="aria-current=${active == 'cakes'} ? 'page'">Custom Cakes</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/orders/my-orders}" th:classappend="${active == 'orders'} ? 'is-active'"
+                    <li class="nav-item" sec:authorize="hasRole('CUSTOMER')">
+                        <a class="nav-link" th:href="@{${myOrdersUrl}}" th:classappend="${active == 'orders'} ? 'is-active'"
                            th:attr="aria-current=${active == 'orders'} ? 'page'">My Orders</a>
                     </li>
                 </ul>
-                <a class="btn sf-btn sf-btn-primary sf-nav-cta" th:href="@{/orders/place}">Order now</a>
+                <!-- Administrators -->
+                <ul class="navbar-nav sf-nav-links" sec:authorize="hasRole('ADMIN')">
+                    <li class="nav-item"><a class="nav-link" th:href="@{/users/admin}">Admin dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/users/admin/customers}">Customers</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/orders/admin}">Order management</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/}" th:classappend="${active == 'home'} ? 'is-active'">View site</a></li>
+                </ul>
+
+                <div class="sf-nav-actions" sec:authorize="!isAuthenticated()">
+                    <a class="sf-signin" th:href="@{/login}">Sign in</a>
+                    <a class="btn sf-btn sf-btn-primary sf-nav-cta" th:href="@{/register}">Create account</a>
+                </div>
+                <a sec:authorize="hasRole('CUSTOMER')" class="btn sf-btn sf-btn-primary sf-nav-cta" th:href="@{/orders/place}">Order now</a>
             </div>
         </div>
     </nav>
@@ -144,10 +196,9 @@
             <div class="sf-footer-col">
                 <h2 class="sf-footer-title">Staff</h2>
                 <ul>
-                    <li><a th:href="@{/orders/admin}">Order admin dashboard</a></li>
+                    <li><a th:href="@{/login}">Staff sign in</a></li>
                 </ul>
-                <p class="sf-footer-note">Staff login is not implemented yet. Admin pages must be protected
-                    by User Management before release.</p>
+                <p class="sf-footer-note">Bakery staff sign in with their administrator account.</p>
             </div>
         </div>
 

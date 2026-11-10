@@ -68,7 +68,7 @@
                                 <svg class="o-icon" aria-hidden="true"><use href="#i-minus"/></svg>
                             </button>
                             <input type="number" class="form-control" id="quantity" name="quantity"
-                                   min="1" step="1" th:value="${order.quantity}" required inputmode="numeric"
+                                   min="1" max="100" step="1" th:value="${order.quantity}" required inputmode="numeric"
                                    aria-describedby="quantity-hint quantity-error">
                             <button type="button" class="o-stepper-btn" data-step="1" aria-label="Increase quantity">
                                 <svg class="o-icon" aria-hidden="true"><use href="#i-plus"/></svg>
