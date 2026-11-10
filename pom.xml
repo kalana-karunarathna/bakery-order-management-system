@@ -26,6 +26,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
+        <!-- MongoDB persistence for User and Order Management (version managed by Spring Boot 3.5). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
         <!-- User Management (Component 01): authentication, roles, CSRF, BCrypt. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

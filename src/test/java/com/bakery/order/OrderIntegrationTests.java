@@ -3,8 +3,10 @@ package com.bakery.order;
 import com.bakery.order.model.Order;
 import com.bakery.order.model.OrderStatus;
 import com.bakery.order.model.OrderType;
+import com.bakery.order.repository.FileOrderRepository;
 import com.bakery.order.repository.OrderRepository;
 import com.bakery.order.service.OrderService;
+import com.bakery.user.repository.FileUserRepository;
 import com.bakery.user.repository.UserRepository;
 import com.bakery.user.security.BakeryUserPrincipal;
 import com.bakery.user.service.UserService;
@@ -72,8 +74,8 @@ class OrderIntegrationTests {
 
     @BeforeEach
     void reset() throws IOException {
-        Files.deleteIfExists(DATA_DIR.resolve(UserRepository.FILE_NAME));
-        Files.deleteIfExists(DATA_DIR.resolve(OrderRepository.FILE_NAME));
+        Files.deleteIfExists(DATA_DIR.resolve(FileUserRepository.FILE_NAME));
+        Files.deleteIfExists(DATA_DIR.resolve(FileOrderRepository.FILE_NAME));
         alice = userService.register("Alice Perera", "alice@example.com", "077 111 1111", "1 Lake Road, Kandy", PASSWORD, PASSWORD).id();
         bob = userService.register("Bob Silva", "bob@example.com", "077 222 2222", "2 Hill Street, Galle", PASSWORD, PASSWORD).id();
         admin = userService.createAdmin("Bakery Admin", "admin@example.com", "Admin2026x").id();
@@ -332,14 +334,14 @@ class OrderIntegrationTests {
 
     @Test
     void unreadableOrderLinesAreKeptAndTheirIdsAreNotReused() throws Exception {
-        List<String> lines = new java.util.ArrayList<>(Files.readAllLines(DATA_DIR.resolve(OrderRepository.FILE_NAME)));
+        List<String> lines = new java.util.ArrayList<>(Files.readAllLines(DATA_DIR.resolve(FileOrderRepository.FILE_NAME)));
         lines.add("O050|U999|P1|Broken|not-a-number|1.00|PICKUP||PENDING|2026-11-10");
-        Files.write(DATA_DIR.resolve(OrderRepository.FILE_NAME), lines);
+        Files.write(DATA_DIR.resolve(FileOrderRepository.FILE_NAME), lines);
 
         assertEquals(2, orderRepository.findAll().size(), "a bad line must not break loading other orders");
         String id = orderService.placeOrder(alice, "P005", "Cookies", 1, 100, OrderType.PICKUP, null).getId();
         assertEquals("O051", id);
-        assertTrue(Files.readString(DATA_DIR.resolve(OrderRepository.FILE_NAME)).contains("O050|U999|P1|Broken"));
+        assertTrue(Files.readString(DATA_DIR.resolve(FileOrderRepository.FILE_NAME)).contains("O050|U999|P1|Broken"));
     }
 
     private static Path createTempDir() {

@@ -29,13 +29,13 @@ class UserRepositoryTests {
     Path dir;
 
     private TextFileStorage storage;
-    private UserRepository repository;
+    private FileUserRepository repository;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(4); // low cost: tests only
 
     @BeforeEach
     void setUp() {
         storage = new TextFileStorage(dir.toString());
-        repository = new UserRepository(storage);
+        repository = new FileUserRepository(storage);
     }
 
     private User customer(String name, String email) {
@@ -48,7 +48,7 @@ class UserRepositoryTests {
         assertEquals("U001", repository.save(customer("Nimal Perera", "nimal@example.com")).getId());
         assertEquals("U002", repository.save(customer("Kamala Silva", "kamala@example.com")).getId());
 
-        UserRepository reopened = new UserRepository(storage);
+        UserRepository reopened = new FileUserRepository(storage);
         List<User> users = reopened.findAll();
         assertEquals(2, users.size());
         User nimal = reopened.findById("U001").orElseThrow();
@@ -60,9 +60,9 @@ class UserRepositoryTests {
     @Test
     void storesBcryptHashNeverThePassword() throws IOException {
         repository.save(customer("Nimal Perera", "nimal@example.com"));
-        String file = String.join("\n", storage.readLines(UserRepository.FILE_NAME));
+        String file = String.join("\n", storage.readLines(FileUserRepository.FILE_NAME));
         assertFalse(file.contains("Bakery2026"), "plain password must never be written");
-        User reloaded = new UserRepository(storage).findByEmail("NIMAL@example.com").orElseThrow();
+        User reloaded = new FileUserRepository(storage).findByEmail("NIMAL@example.com").orElseThrow();
         assertTrue(reloaded.getPasswordHash().startsWith("$2a$"));
         assertTrue(encoder.matches("Bakery2026", reloaded.getPasswordHash()));
     }
@@ -93,22 +93,22 @@ class UserRepositoryTests {
         repository.update("U001", (u, all) -> new LoyaltyCustomer(u.getId(), u.getFullName(), u.getEmail(),
                 u.getPhone(), u.getAddress(), u.getPasswordHash(), u.getStatus(), u.getCreatedDate()));
 
-        UserRepository reopened = new UserRepository(storage);
+        UserRepository reopened = new FileUserRepository(storage);
         assertInstanceOf(LoyaltyCustomer.class, reopened.findById("U001").orElseThrow());
         assertInstanceOf(AdminUser.class, reopened.findById("U002").orElseThrow());
     }
 
     @Test
     void keepsMalformedLinesAndNeverReusesTheirIds() throws IOException {
-        storage.writeLines(UserRepository.FILE_NAME, List.of(
-                UserRepository.HEADER,
+        storage.writeLines(FileUserRepository.FILE_NAME, List.of(
+                FileUserRepository.HEADER,
                 "U007|CUSTOMER|REGULAR|Broken|not-an-email|||-|ACTIVE|2026-11-10",
                 "garbage without delimiters"));
         assertTrue(repository.findAll().isEmpty());
 
         User saved = repository.save(customer("Nimal Perera", "nimal@example.com"));
         assertEquals("U008", saved.getId(), "ID of an unreadable record must not be reused");
-        List<String> lines = storage.readLines(UserRepository.FILE_NAME);
+        List<String> lines = storage.readLines(FileUserRepository.FILE_NAME);
         assertTrue(lines.contains("U007|CUSTOMER|REGULAR|Broken|not-an-email|||-|ACTIVE|2026-11-10"));
         assertTrue(lines.contains("garbage without delimiters"));
     }
@@ -119,17 +119,17 @@ class UserRepositoryTests {
                 "# User Management - fictional sample records only",
                 "# id|name|email|role",
                 "U001|Sample Customer|customer@example.test|CUSTOMER");
-        storage.writeLines(UserRepository.FILE_NAME, legacy);
+        storage.writeLines(FileUserRepository.FILE_NAME, legacy);
 
         User migrated = repository.findById("U001").orElseThrow();
         assertEquals(AccountStatus.INACTIVE, migrated.getStatus(), "legacy records must not become working accounts");
         assertFalse(migrated.hasUsablePassword());
 
         repository.save(customer("Nimal Perera", "nimal@example.com"));
-        assertEquals(legacy, storage.readLines(UserRepository.BACKUP_FILE_NAME));
-        List<String> lines = storage.readLines(UserRepository.FILE_NAME);
+        assertEquals(legacy, storage.readLines(FileUserRepository.BACKUP_FILE_NAME));
+        List<String> lines = storage.readLines(FileUserRepository.FILE_NAME);
         assertEquals("# User Management - fictional sample records only", lines.get(0));
-        assertEquals(UserRepository.HEADER, lines.get(1));
+        assertEquals(FileUserRepository.HEADER, lines.get(1));
         assertTrue(lines.get(2).startsWith("U001|CUSTOMER|REGULAR|Sample Customer|customer@example.test|||-|INACTIVE|"));
         assertTrue(lines.get(3).startsWith("U002|"));
     }
@@ -149,6 +149,6 @@ class UserRepositoryTests {
         // The model already blocks this; serialise() is a second line of defence.
         User user = customer("Nimal Perera", "nimal@example.com");
         user.assignId("U001");
-        assertEquals(10, UserRepository.serialise(user).split("\\|", -1).length);
+        assertEquals(10, FileUserRepository.serialise(user).split("\\|", -1).length);
     }
 }
