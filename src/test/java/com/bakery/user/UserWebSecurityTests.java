@@ -112,7 +112,7 @@ class UserWebSecurityTests {
     void loginSucceedsWithCorrectPassword() throws Exception {
         mvc.perform(formLogin("/login").userParameter("email").user("ALICE@example.com").password(PASSWORD))
                 .andExpect(authenticated().withRoles("CUSTOMER"))
-                .andExpect(redirectedUrl("/profile"));
+                .andExpect(redirectedUrl("/"));
     }
 
     @Test

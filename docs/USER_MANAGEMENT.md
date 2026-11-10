@@ -33,10 +33,10 @@ No `/profile` route takes a user ID. The account is always the one in the authen
 | Role | Goes to |
 | --- | --- |
 | ADMIN | `/users/admin` (admin dashboard) |
-| CUSTOMER | `/profile` |
-| Either, after being sent to sign in from a protected page | back to that page (e.g. `/profile/password`), unless it is an admin page and the user is a customer, in which case `/profile` |
+| CUSTOMER | `/` (premium homepage, showing My Orders, My account and Log out) |
+| Either, after being sent to sign in from a protected page | back to that page (e.g. `/orders/place`, `/orders/my-orders`, `/profile/password`), unless it is an admin page and the user is a customer, in which case `/` |
 
-Signed-in users who open `/login` or `/register` are sent to `/profile`.
+Signed-in users who open `/login` or `/register` are sent to their home: customers to `/`, admins to `/users/admin`.
 
 **Authentication pages** (`/login`, `/register`) use the minimal `user/fragments/user-ui :: auth-header`
 (brand + "Back to shop") and `auth-footer` instead of the module navigation.

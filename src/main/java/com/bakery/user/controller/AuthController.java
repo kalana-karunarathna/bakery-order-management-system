@@ -1,6 +1,7 @@
 package com.bakery.user.controller;
 
 import com.bakery.user.security.LoginFailureHandler;
+import com.bakery.user.security.RoleBasedLoginSuccessHandler;
 import com.bakery.user.service.UserService;
 import com.bakery.user.service.UserValidationException;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,7 +39,7 @@ public class AuthController {
     @GetMapping("/login")
     public String login(Authentication authentication, HttpSession session, Model model) {
         if (isSignedIn(authentication)) {
-            return "redirect:/profile";
+            return "redirect:" + RoleBasedLoginSuccessHandler.homeFor(authentication);
         }
         Object lastEmail = session.getAttribute(LoginFailureHandler.LAST_EMAIL_ATTRIBUTE);
         session.removeAttribute(LoginFailureHandler.LAST_EMAIL_ATTRIBUTE);
@@ -49,7 +50,7 @@ public class AuthController {
     @GetMapping("/register")
     public String registerForm(Authentication authentication, Model model) {
         if (isSignedIn(authentication)) {
-            return "redirect:/profile";
+            return "redirect:" + RoleBasedLoginSuccessHandler.homeFor(authentication);
         }
         model.addAttribute("form", new RegistrationForm());
         return "user/register";
@@ -59,7 +60,7 @@ public class AuthController {
     public String register(@ModelAttribute("form") RegistrationForm form, BindingResult result,
                            Authentication authentication, RedirectAttributes redirect) {
         if (isSignedIn(authentication)) {
-            return "redirect:/profile";
+            return "redirect:" + RoleBasedLoginSuccessHandler.homeFor(authentication);
         }
         try {
             userService.register(form.getFullName(), form.getEmail(), form.getPhone(), form.getAddress(),

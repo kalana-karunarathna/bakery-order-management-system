@@ -131,9 +131,9 @@ class UserNavigationAndFlowTests {
     // ── Login redirects ───────────────────────────────────────────────────────
 
     @Test
-    void customerLoginGoesToProfileAndAdminLoginGoesToDashboard() throws Exception {
+    void customerLoginGoesToHomepageAndAdminLoginGoesToDashboard() throws Exception {
         mvc.perform(formLogin("/login").userParameter("email").user("alice@example.com").password(PASSWORD))
-                .andExpect(authenticated().withRoles("CUSTOMER")).andExpect(redirectedUrl("/profile"));
+                .andExpect(authenticated().withRoles("CUSTOMER")).andExpect(redirectedUrl("/"));
         mvc.perform(formLogin("/login").userParameter("email").user("admin@example.com").password(ADMIN_PASSWORD))
                 .andExpect(authenticated().withRoles("ADMIN")).andExpect(redirectedUrl("/users/admin"));
     }
@@ -151,13 +151,76 @@ class UserNavigationAndFlowTests {
         MvcResult bounce = mvc.perform(get("/users/admin/customers")).andExpect(redirectedUrlPattern("**/login")).andReturn();
         MockHttpSession session = (MockHttpSession) bounce.getRequest().getSession();
         mvc.perform(post("/login").param("email", "alice@example.com").param("password", PASSWORD).with(csrf()).session(session))
-                .andExpect(redirectedUrl("/profile"));
+                .andExpect(redirectedUrl("/"));
     }
 
     @Test
     void signedInUsersAreRedirectedAwayFromLoginAndRegister() throws Exception {
-        mvc.perform(get("/login").with(user(principal(alice)))).andExpect(redirectedUrl("/profile"));
-        mvc.perform(get("/register").with(user(principal(alice)))).andExpect(redirectedUrl("/profile"));
+        mvc.perform(get("/login").with(user(principal(alice)))).andExpect(redirectedUrl("/"));
+        mvc.perform(get("/register").with(user(principal(alice)))).andExpect(redirectedUrl("/"));
+        mvc.perform(get("/login").with(user(principal(admin)))).andExpect(redirectedUrl("/users/admin"));
+    }
+
+    // ── Saved request (return to the originally requested page) ───────────────
+
+    /** Requests a protected page anonymously, then signs in with the same session. */
+    private MvcResult loginAfterVisiting(String path, String email, String password) throws Exception {
+        MvcResult bounce = mvc.perform(get(path)).andExpect(redirectedUrlPattern("**/login")).andReturn();
+        MockHttpSession session = (MockHttpSession) bounce.getRequest().getSession();
+        return mvc.perform(post("/login").param("email", email).param("password", password).with(csrf()).session(session))
+                .andReturn();
+    }
+
+    @Test
+    void customerReturnsToPlaceOrderAfterLogin() throws Exception {
+        MvcResult login = loginAfterVisiting("/orders/place", "alice@example.com", PASSWORD);
+        assertEquals("http://localhost/orders/place?continue", login.getResponse().getRedirectedUrl());
+        // The saved page now opens for the signed-in customer.
+        mvc.perform(get("/orders/place").session((MockHttpSession) login.getRequest().getSession(false)))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("Alice Perera")));
+    }
+
+    @Test
+    void customerReturnsToMyOrdersAfterLogin() throws Exception {
+        MvcResult login = loginAfterVisiting("/orders/my-orders", "alice@example.com", PASSWORD);
+        assertEquals("http://localhost/orders/my-orders?continue", login.getResponse().getRedirectedUrl());
+    }
+
+    @Test
+    void savedPageTheUserIsNotAllowedToSeeIsDropped() throws Exception {
+        // A customer bounced from an admin page lands on the homepage, not on a 403.
+        assertEquals("/", loginAfterVisiting("/orders/admin", "alice@example.com", PASSWORD)
+                .getResponse().getRedirectedUrl());
+        // An admin bounced from an admin page is returned to it.
+        assertEquals("http://localhost/orders/admin?continue",
+                loginAfterVisiting("/orders/admin", "admin@example.com", ADMIN_PASSWORD).getResponse().getRedirectedUrl());
+        // An admin bounced from a customer-only page goes to the admin dashboard instead of a 403.
+        assertEquals("/users/admin",
+                loginAfterVisiting("/orders/place", "admin@example.com", ADMIN_PASSWORD).getResponse().getRedirectedUrl());
+    }
+
+    @Test
+    void sessionIsKeptAcrossHomepageShopOrdersAndProfile() throws Exception {
+        MvcResult login = mvc.perform(formLogin("/login").userParameter("email").user("alice@example.com").password(PASSWORD))
+                .andExpect(redirectedUrl("/")).andReturn();
+        MockHttpSession session = (MockHttpSession) login.getRequest().getSession(false);
+
+        // Homepage after login: customer navigation, no Sign in / Create account.
+        mvc.perform(get("/").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("Something sweet for every occasion."),          // premium homepage
+                        containsString("href=\"/orders/my-orders\""), containsString("My account"),
+                        containsString("Alice Perera"),
+                        containsString("action=\"/logout\""), containsString("name=\"_csrf\""),
+                        not(containsString("Create account")), not(containsString(">Sign in<")),
+                        not(containsString("href=\"/register\"")))));
+
+        for (String page : new String[]{"/products", "/orders/my-orders", "/orders/place", "/profile"}) {
+            mvc.perform(get(page).session(session))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Alice Perera")));
+        }
     }
 
     // ── Admin dashboard / customer list ───────────────────────────────────────
@@ -194,9 +257,9 @@ class UserNavigationAndFlowTests {
                         .param("password", PASSWORD).param("confirmPassword", PASSWORD))
                 .andExpect(status().isOk()).andExpect(content().string(containsString(UserService.EMAIL_TAKEN)));
 
-        // 9-10: sign in, land on profile
+        // 9-10: sign in, land on the homepage
         MvcResult login = mvc.perform(formLogin("/login").userParameter("email").user("chris@example.com").password(PASSWORD))
-                .andExpect(redirectedUrl("/profile")).andReturn();
+                .andExpect(redirectedUrl("/")).andReturn();
         MockHttpSession session = (MockHttpSession) login.getRequest().getSession(false);
         mvc.perform(get("/profile").session(session))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("Chris Fernando")));
