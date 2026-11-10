@@ -1,81 +1,231 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Home')}"></head>
-<body>
-<header th:replace="~{fragments/layout :: header}"></header>
-<main id="main-content" class="container py-5">
-    <section class="hero mb-5">
-        <p class="text-uppercase fw-semibold text-secondary">Welcome to our bakery</p>
-        <h1 class="display-5 fw-bold">Something sweet for every occasion.</h1>
-        <p class="lead mt-3">Discover bakery favourites, plan a celebration cake, and keep your orders in one place.</p>
-    </section>
-    <section aria-labelledby="modules-heading">
-        <h2 id="modules-heading" class="h3 mb-4">Explore the bakery</h2>
-        <div class="row g-4">
-            <div class="col-md-6 col-lg-4">
-                <article class="card module-card h-100">
-                    <div class="card-body d-flex flex-column p-4">
-                        <h3 class="h5">User Management</h3>
-                        <p class="text-secondary">Manage customer accounts and user profiles.</p>
-                        <a class="btn btn-bakery mt-auto align-self-start" th:href="@{/users}"
-                           aria-label="Open User Management">Explore</a>
-                    </div>
-                </article>
+<head th:replace="~{fragments/storefront :: head('Freshly baked, made to order')}"></head>
+<body class="sf-body">
+<header th:replace="~{fragments/storefront :: header('home')}"></header>
+
+<main id="main-content">
+
+    <!-- ── Hero ─────────────────────────────────────────────────────── -->
+    <section class="sf-hero" aria-labelledby="hero-title">
+        <div class="container sf-hero-grid">
+            <div class="sf-hero-copy">
+                <p class="sf-eyebrow"><span class="sf-eyebrow-dot" aria-hidden="true"></span>Small-batch bakery &middot; Order online</p>
+                <h1 id="hero-title" class="sf-display">Something sweet for every occasion.</h1>
+                <p class="sf-lead">
+                    Flaky croissants, slow-proved sourdough and celebration cakes made just the way you want them.
+                    Order ahead, then collect from the bakery or have it delivered to your door.
+                </p>
+                <div class="sf-hero-actions">
+                    <a href="#featured" class="btn sf-btn sf-btn-primary sf-btn-lg">
+                        Shop Now
+                        <svg class="sf-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </a>
+                    <a th:href="@{/cake-bookings}" class="btn sf-btn sf-btn-outline sf-btn-lg">Explore Custom Cakes</a>
+                </div>
+                <!-- Real ordering rules (see DeliveryOrder / OrderService), not marketing claims. -->
+                <ul class="sf-hero-facts" th:with="fee=${T(com.bakery.order.model.DeliveryOrder).DELIVERY_FEE}">
+                    <li><strong>Free</strong><span>bakery pickup</span></li>
+                    <li><strong th:text="'LKR ' + ${#numbers.formatDecimal(fee, 1, 'COMMA', 0, 'POINT')}">LKR 250</strong><span>flat delivery fee</span></li>
+                    <li><strong>Pending</strong><span>orders can still be changed</span></li>
+                </ul>
             </div>
-            <div class="col-md-6 col-lg-4">
-                <article class="card module-card h-100">
-                    <div class="card-body d-flex flex-column p-4">
-                        <h3 class="h5">Bakery Product Management</h3>
-                        <p class="text-secondary">Explore bakery products, prices, and availability.</p>
-                        <a class="btn btn-bakery mt-auto align-self-start" th:href="@{/products}"
-                           aria-label="Open Bakery Product Management">Explore</a>
-                    </div>
-                </article>
-            </div>
-            <div class="col-md-6 col-lg-4">
-                <article class="card module-card h-100">
-                    <div class="card-body d-flex flex-column p-4">
-                        <h3 class="h5">Order Management</h3>
-                        <p class="text-secondary">Place bakery orders and follow their progress.</p>
-                        <a class="btn btn-bakery mt-auto align-self-start" th:href="@{/orders}"
-                           aria-label="Open Order Management">Explore</a>
-                    </div>
-                </article>
-            </div>
-            <div class="col-md-6 col-lg-4">
-                <article class="card module-card h-100">
-                    <div class="card-body d-flex flex-column p-4">
-                        <h3 class="h5">Custom Cake Booking</h3>
-                        <p class="text-secondary">Plan a custom cake for your next celebration.</p>
-                        <a class="btn btn-bakery mt-auto align-self-start" th:href="@{/cake-bookings}"
-                           aria-label="Open Custom Cake Booking">Explore</a>
-                    </div>
-                </article>
-            </div>
-            <div class="col-md-6 col-lg-4">
-                <article class="card module-card h-100">
-                    <div class="card-body d-flex flex-column p-4">
-                        <h3 class="h5">Payment and Invoice Management</h3>
-                        <p class="text-secondary">Record payments and view order invoices.</p>
-                        <a class="btn btn-bakery mt-auto align-self-start" th:href="@{/payments}"
-                           aria-label="Open Payment and Invoice Management">Explore</a>
-                    </div>
-                </article>
-            </div>
-            <div class="col-md-6 col-lg-4">
-                <article class="card module-card h-100">
-                    <div class="card-body d-flex flex-column p-4">
-                        <h3 class="h5">Feedback, Review and Admin Management</h3>
-                        <p class="text-secondary">Share feedback, review products, and manage moderation.</p>
-                        <a class="btn btn-bakery mt-auto align-self-start" th:href="@{/feedback}"
-                           aria-label="Open Feedback, Review and Admin Management">Explore</a>
-                    </div>
-                </article>
+
+            <div class="sf-hero-media">
+                <figure class="sf-hero-main">
+                    <img th:src="@{/images/bakery/hero-pastries.webp}" width="1200" height="960" fetchpriority="high"
+                         alt="Golden croissants and pains au chocolat on a wooden board beside a rolling pin, whisk and chocolate pieces">
+                </figure>
+                <figure class="sf-hero-inset">
+                    <img th:src="@{/images/bakery/hero-croissant.webp}" width="560" height="560" loading="lazy" decoding="async"
+                         alt="A cappuccino with latte art next to a butter croissant on a wooden table">
+                </figure>
+                <div class="sf-hero-badge" aria-hidden="true">
+                    <span class="sf-hero-badge-icon">
+                        <svg class="sf-icon" viewBox="0 0 24 24"><path d="M12 3c3 3 4.5 5.5 4.5 8.5a4.5 4.5 0 0 1-9 0C7.5 8.5 9 6 12 3Z"/><path d="M12 21v-4"/></svg>
+                    </span>
+                    <span><strong>Baked to order</strong><small>Pickup or delivery</small></span>
+                </div>
             </div>
         </div>
     </section>
+
+    <!-- ── Category quick links ─────────────────────────────────────── -->
+    <section class="sf-section sf-section--tight" aria-labelledby="categories-title">
+        <div class="container">
+            <h2 id="categories-title" class="visually-hidden">Shop by category</h2>
+            <ul class="sf-cat-tiles">
+                <li><a href="#featured" data-category-link="cakes" class="sf-cat-tile">
+                    <img th:src="@{/images/bakery/product-layer-cake.webp}" alt="" width="560" height="700" loading="lazy" decoding="async">
+                    <span>Cakes</span></a></li>
+                <li><a href="#featured" data-category-link="breads" class="sf-cat-tile">
+                    <img th:src="@{/images/bakery/product-sourdough.webp}" alt="" width="560" height="700" loading="lazy" decoding="async">
+                    <span>Breads</span></a></li>
+                <li><a href="#featured" data-category-link="pastries" class="sf-cat-tile">
+                    <img th:src="@{/images/bakery/product-croissant.webp}" alt="" width="560" height="700" loading="lazy" decoding="async">
+                    <span>Pastries</span></a></li>
+                <li><a href="#featured" data-category-link="cookies" class="sf-cat-tile">
+                    <img th:src="@{/images/bakery/product-cookies.webp}" alt="" width="560" height="700" loading="lazy" decoding="async">
+                    <span>Cookies</span></a></li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- ── Featured products (demo catalogue) ───────────────────────── -->
+    <section id="featured" class="sf-section" aria-labelledby="featured-title">
+        <div class="container">
+            <div class="sf-section-head">
+                <div>
+                    <p class="sf-eyebrow">From the counter</p>
+                    <h2 id="featured-title" class="sf-h2">Bakery favourites</h2>
+                </div>
+                <div class="sf-filters" role="group" aria-label="Filter products by category">
+                    <button type="button" class="sf-chip is-active" data-filter="all" aria-pressed="true">All Products</button>
+                    <button type="button" class="sf-chip" data-filter="cakes" aria-pressed="false">Cakes</button>
+                    <button type="button" class="sf-chip" data-filter="breads" aria-pressed="false">Breads</button>
+                    <button type="button" class="sf-chip" data-filter="pastries" aria-pressed="false">Pastries</button>
+                    <button type="button" class="sf-chip" data-filter="cookies" aria-pressed="false">Cookies</button>
+                </div>
+            </div>
+
+            <!--
+              DEMO CATALOGUE. The Product Management component is not implemented yet, so these
+              cards are a visual preview only: no prices, no stock, nothing is sent to the order flow.
+              Replace this block with a th:each over real products once ProductService exists.
+            -->
+            <div class="sf-demo-note" role="note">
+                <svg class="sf-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>
+                <span><strong>Preview catalogue.</strong> These are sample products with illustrative photos.
+                    Live products and prices will appear here once the bakery catalogue is connected.</span>
+            </div>
+
+            <p class="visually-hidden" id="product-count" aria-live="polite">Showing 8 products</p>
+
+            <div class="sf-product-grid" id="product-grid">
+                <article th:replace="~{fragments/storefront :: product('Cherry Chocolate Layer Cake', 'cakes', 'Cakes', '/images/bakery/product-layer-cake.webp',
+                    'Three-layer chocolate cake with cream, dark cherries and glossy glaze',
+                    'Dark chocolate sponge layered with whipped cream and glazed cherries.')}"></article>
+                <article th:replace="~{fragments/storefront :: product('Chocolate Cupcakes', 'cakes', 'Cupcakes', '/images/bakery/product-cupcakes.webp',
+                    'Chocolate cupcakes topped with swirls of cream frosting and toffee crumbs',
+                    'Soft chocolate cupcakes with a whipped vanilla frosting swirl.')}"></article>
+                <article th:replace="~{fragments/storefront :: product('Country Sourdough', 'breads', 'Bread', '/images/bakery/product-sourdough.webp',
+                    'Close-up of a scored, flour-dusted sourdough loaf with a crackled crust',
+                    'Slow-fermented loaf with a blistered crust and an open, chewy crumb.')}"></article>
+                <article th:replace="~{fragments/storefront :: product('Artisan Bread Basket', 'breads', 'Bread', '/images/bakery/product-bread-basket.webp',
+                    'Wicker basket of assorted rustic breads and rolls with wheat stalks',
+                    'A mixed basket of rustic loaves, rolls and seeded breads.')}"></article>
+                <article th:replace="~{fragments/storefront :: product('Butter Croissant', 'pastries', 'Croissants', '/images/bakery/product-croissant.webp',
+                    'A golden butter croissant served with a cappuccino on a wooden table',
+                    'Crisp, honey-coloured layers made with plenty of butter.')}"></article>
+                <article th:replace="~{fragments/storefront :: product('Pain au Chocolat', 'pastries', 'Pastries', '/images/bakery/product-pastries.webp',
+                    'Croissants and chocolate pastries on a wooden board with baking tools',
+                    'Laminated pastry folded around two bars of dark chocolate.')}"></article>
+                <article th:replace="~{fragments/storefront :: product('Glazed Cinnamon Rolls', 'pastries', 'Pastries', '/images/bakery/product-cinnamon-rolls.webp',
+                    'Tray of cinnamon rolls topped with white vanilla glaze',
+                    'Soft spiced swirls finished with a vanilla glaze.')}"></article>
+                <article th:replace="~{fragments/storefront :: product('Salted Chocolate Chip Cookies', 'cookies', 'Cookies', '/images/bakery/product-cookies.webp',
+                    'Chocolate chip cookies with melted chocolate chunks and flaky salt, one broken in half',
+                    'Chewy centres, crisp edges and a pinch of sea salt.')}"></article>
+            </div>
+
+            <div class="sf-empty" id="product-empty" hidden>
+                <p>No products in this category yet.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Custom cakes promo ───────────────────────────────────────── -->
+    <section class="sf-section" aria-labelledby="custom-title">
+        <div class="container">
+            <div class="sf-promo">
+                <div class="sf-promo-media">
+                    <img th:src="@{/images/bakery/custom-cake.webp}" width="900" height="1100" loading="lazy" decoding="async"
+                         alt="A slice of layered chocolate cake with a fork on a white plate">
+                </div>
+                <div class="sf-promo-copy">
+                    <p class="sf-eyebrow sf-eyebrow--light">Custom cakes</p>
+                    <h2 id="custom-title" class="sf-h2">A cake designed around your celebration</h2>
+                    <p>Birthdays, weddings, anniversaries or just because. Tell us the flavour, size and style
+                        you have in mind and book a cake made for the day.</p>
+                    <ul class="sf-promo-list">
+                        <li>Choose your flavour, size and decoration</li>
+                        <li>Add a message or theme</li>
+                        <li>Pick the date you need it</li>
+                    </ul>
+                    <a th:href="@{/cake-bookings}" class="btn sf-btn sf-btn-cream sf-btn-lg">Explore Custom Cakes</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Bakery showcase ──────────────────────────────────────────── -->
+    <section class="sf-section" aria-labelledby="showcase-title">
+        <div class="container">
+            <div class="sf-showcase">
+                <div class="sf-showcase-copy">
+                    <p class="sf-eyebrow">The bakery</p>
+                    <h2 id="showcase-title" class="sf-h2">Baked in small batches, all day long</h2>
+                    <p class="sf-lead">Our shelves are restocked through the day with breads, pastries and sweet
+                        treats, so whatever you order arrives as fresh as it can be.</p>
+                    <a th:href="@{/orders/place}" class="btn sf-btn sf-btn-primary">Start an order</a>
+                </div>
+                <figure class="sf-showcase-large">
+                    <img th:src="@{/images/bakery/showcase-bakery.webp}" width="1200" height="780" loading="lazy" decoding="async"
+                         alt="Inside a bright bakery: a long counter with trays of pastries and shelves of bread">
+                </figure>
+                <figure class="sf-showcase-tall">
+                    <img th:src="@{/images/bakery/showcase-shelf.webp}" width="700" height="880" loading="lazy" decoding="async"
+                         alt="Glass bakery display shelves filled with breads, rolls and pastries">
+                </figure>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── How it works ─────────────────────────────────────────────── -->
+    <section class="sf-section" aria-labelledby="how-title">
+        <div class="container">
+            <div class="sf-section-head sf-section-head--center">
+                <div>
+                    <p class="sf-eyebrow">How it works</p>
+                    <h2 id="how-title" class="sf-h2">Fresh bakes in three simple steps</h2>
+                </div>
+            </div>
+            <ol class="sf-steps">
+                <li class="sf-step">
+                    <span class="sf-step-num" aria-hidden="true">01</span>
+                    <span class="sf-step-icon" aria-hidden="true">
+                        <svg class="sf-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                    </span>
+                    <h3>Explore products</h3>
+                    <p>Browse breads, pastries, cookies and cakes, or plan a custom cake for a special day.</p>
+                </li>
+                <li class="sf-step">
+                    <span class="sf-step-num" aria-hidden="true">02</span>
+                    <span class="sf-step-icon" aria-hidden="true">
+                        <svg class="sf-icon" viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9L5 8Z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>
+                    </span>
+                    <h3>Place your order</h3>
+                    <p>Choose your quantity and see the full price before you confirm.</p>
+                </li>
+                <li class="sf-step">
+                    <span class="sf-step-num" aria-hidden="true">03</span>
+                    <span class="sf-step-icon" aria-hidden="true">
+                        <svg class="sf-icon" viewBox="0 0 24 24"><path d="M3 6h11v10H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+                    </span>
+                    <h3>Pickup or get delivery</h3>
+                    <p>Collect from the bakery for free, or have it delivered. Track every step in My Orders.</p>
+                </li>
+            </ol>
+            <div class="sf-center-actions">
+                <a th:href="@{/orders/place}" class="btn sf-btn sf-btn-primary">Place an order</a>
+                <a th:href="@{/orders/my-orders}" class="btn sf-btn sf-btn-ghost">Track my orders</a>
+            </div>
+        </div>
+    </section>
+
 </main>
-<footer th:replace="~{fragments/layout :: footer}"></footer>
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+<th:block th:replace="~{fragments/storefront :: scripts}"></th:block>
 </body>
 </html>

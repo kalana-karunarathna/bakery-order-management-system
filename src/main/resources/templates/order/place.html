@@ -1,132 +1,209 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Place Order')}"></head>
-<body>
-<header th:replace="~{fragments/layout :: header}"></header>
-<main id="main-content" class="container py-5">
+<head th:replace="~{order/fragments/order-ui :: head('Place Order')}"></head>
+<body class="order-ui sf-body">
+<svg th:replace="~{order/fragments/order-ui :: icons}"></svg>
+<header th:replace="~{fragments/storefront :: header('orders')}"></header>
+<main id="main-content" class="container o-main"
+      th:with="deliveryFee=${T(com.bakery.order.model.DeliveryOrder).DELIVERY_FEE}">
 
-    <a class="link-secondary" th:href="@{/orders}">&#8592; Back to Orders</a>
-    <h1 class="display-6 fw-bold mt-4">Place an Order</h1>
-    <p class="lead text-secondary">Fill in the details below to place a new bakery order.</p>
+    <nav class="o-back" aria-label="Breadcrumb">
+        <a th:href="@{/orders}"><svg class="o-icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>Orders</a>
+    </nav>
 
-    <!-- Flash messages -->
-    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
-        <span th:text="${errorMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <header class="o-page-head">
+        <p class="o-eyebrow">New order</p>
+        <h1 class="o-title">Place an order</h1>
+        <p class="o-subtitle">Fill in the details below. Your total updates as you go.</p>
+    </header>
 
-    <div class="row justify-content-center mt-4">
-        <div class="col-lg-7">
-            <div class="form-section">
-                <form th:action="@{/orders/place}" method="post" novalidate id="orderForm">
+    <div th:replace="~{order/fragments/order-ui :: flash}"></div>
 
-                    <!-- Customer ID -->
-                    <div class="mb-4">
-                        <label for="customerId" class="form-label">Customer ID</label>
-                        <input type="text" class="form-control" id="customerId" name="customerId"
-                               placeholder="e.g. U001" required>
-                        <div class="form-text text-secondary">Enter your registered customer ID.</div>
-                    </div>
+    <!--
+      Field names and the form action are unchanged: customerId, productId, productName,
+      quantity, unitPrice, orderType, deliveryAddress -> POST /orders/place.
+      NOTE: unitPrice is still submitted by the browser and accepted by OrderService.
+      Once the Product component exposes its catalogue, the server should look up the
+      price by productId instead of trusting this value.
+    -->
+    <form th:action="@{/orders/place}" method="post" novalidate id="orderForm"
+          class="o-order-form" data-order-form="place"
+          th:attr="data-delivery-fee=${deliveryFee}">
+        <div class="row g-4 align-items-start">
 
-                    <!-- Product ID -->
-                    <div class="mb-4">
-                        <label for="productId" class="form-label">Product ID</label>
-                        <input type="text" class="form-control" id="productId" name="productId"
-                               placeholder="e.g. P001" required>
-                    </div>
+            <!-- Form column -->
+            <div class="col-lg-7 col-xl-8">
 
-                    <!-- Product Name -->
-                    <div class="mb-4">
-                        <label for="productName" class="form-label">Product Name</label>
-                        <input type="text" class="form-control" id="productName" name="productName"
-                               placeholder="e.g. Chocolate Fudge Cake" required>
-                    </div>
-
-                    <!-- Quantity & Unit Price -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-6">
-                            <label for="quantity" class="form-label">Quantity</label>
-                            <input type="number" class="form-control" id="quantity" name="quantity"
-                                   min="1" value="1" required oninput="updateTotal()">
-                        </div>
-                        <div class="col-sm-6">
-                            <label for="unitPrice" class="form-label">Unit Price (LKR)</label>
-                            <input type="number" class="form-control" id="unitPrice" name="unitPrice"
-                                   min="0.01" step="0.01" placeholder="0.00" required oninput="updateTotal()">
+                <!-- 1. Customer -->
+                <section class="o-card o-form-section" aria-labelledby="sec-customer">
+                    <div class="o-form-section-head">
+                        <span class="o-step-num" aria-hidden="true">1</span>
+                        <div>
+                            <h2 id="sec-customer" class="o-card-title">Your details</h2>
+                            <p class="o-card-sub">We use your customer ID to link this order to your account.</p>
                         </div>
                     </div>
-
-                    <!-- Order Type -->
-                    <div class="mb-4">
-                        <label class="form-label d-block">Order Type</label>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="orderType"
-                                   id="typePickup" value="PICKUP" checked onchange="toggleDelivery()">
-                            <label class="form-check-label" for="typePickup">Pickup</label>
+                    <div class="o-field">
+                        <label for="customerId" class="form-label">Customer ID <span class="o-req" aria-hidden="true">*</span></label>
+                        <div class="o-input-icon">
+                            <svg class="o-icon" aria-hidden="true"><use href="#i-user"/></svg>
+                            <input type="text" class="form-control" id="customerId" name="customerId"
+                                   placeholder="e.g. U001" required autocomplete="off" maxlength="40"
+                                   aria-describedby="customerId-hint customerId-error">
                         </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="orderType"
-                                   id="typeDelivery" value="DELIVERY" onchange="toggleDelivery()">
-                            <label class="form-check-label" for="typeDelivery">
-                                Delivery <span class="text-secondary small">(+LKR 250.00)</span>
+                        <div id="customerId-hint" class="form-text">Your registered customer ID.</div>
+                        <div id="customerId-error" class="o-field-error" aria-live="polite"></div>
+                    </div>
+                </section>
+
+                <!-- 2. Product -->
+                <section class="o-card o-form-section" aria-labelledby="sec-product">
+                    <div class="o-form-section-head">
+                        <span class="o-step-num" aria-hidden="true">2</span>
+                        <div>
+                            <h2 id="sec-product" class="o-card-title">Product</h2>
+                            <p class="o-card-sub">Enter the product you would like to order.</p>
+                        </div>
+                    </div>
+
+                    <div class="o-integration-note">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                        <span>Product selection will be connected to the bakery catalogue (Product Management).
+                              Until then, please enter the product details manually.</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-sm-5 o-field">
+                            <label for="productId" class="form-label">Product ID <span class="o-req" aria-hidden="true">*</span></label>
+                            <input type="text" class="form-control" id="productId" name="productId"
+                                   placeholder="e.g. P001" required autocomplete="off" maxlength="40"
+                                   aria-describedby="productId-error">
+                            <div id="productId-error" class="o-field-error" aria-live="polite"></div>
+                        </div>
+                        <div class="col-sm-7 o-field">
+                            <label for="productName" class="form-label">Product name <span class="o-req" aria-hidden="true">*</span></label>
+                            <input type="text" class="form-control" id="productName" name="productName"
+                                   placeholder="e.g. Chocolate Fudge Cake" required autocomplete="off" maxlength="100"
+                                   aria-describedby="productName-error">
+                            <div id="productName-error" class="o-field-error" aria-live="polite"></div>
+                        </div>
+                        <div class="col-sm-6 o-field">
+                            <label for="unitPrice" class="form-label">Unit price <span class="o-req" aria-hidden="true">*</span></label>
+                            <div class="input-group o-input-group">
+                                <span class="input-group-text">LKR</span>
+                                <input type="number" class="form-control" id="unitPrice" name="unitPrice"
+                                       min="0.01" step="0.01" placeholder="0.00" required inputmode="decimal"
+                                       aria-describedby="unitPrice-error">
+                            </div>
+                            <div id="unitPrice-error" class="o-field-error" aria-live="polite"></div>
+                        </div>
+                        <div class="col-sm-6 o-field">
+                            <label for="quantity" class="form-label">Quantity <span class="o-req" aria-hidden="true">*</span></label>
+                            <div class="o-stepper" data-stepper>
+                                <button type="button" class="o-stepper-btn" data-step="-1" aria-label="Decrease quantity">
+                                    <svg class="o-icon" aria-hidden="true"><use href="#i-minus"/></svg>
+                                </button>
+                                <input type="number" class="form-control" id="quantity" name="quantity"
+                                       min="1" step="1" value="1" required inputmode="numeric"
+                                       aria-describedby="quantity-error">
+                                <button type="button" class="o-stepper-btn" data-step="1" aria-label="Increase quantity">
+                                    <svg class="o-icon" aria-hidden="true"><use href="#i-plus"/></svg>
+                                </button>
+                            </div>
+                            <div id="quantity-error" class="o-field-error" aria-live="polite"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. Fulfilment -->
+                <section class="o-card o-form-section" aria-labelledby="sec-fulfilment">
+                    <div class="o-form-section-head">
+                        <span class="o-step-num" aria-hidden="true">3</span>
+                        <div>
+                            <h2 id="sec-fulfilment" class="o-card-title">Pickup or delivery</h2>
+                            <p class="o-card-sub">Choose how you'd like to receive your order.</p>
+                        </div>
+                    </div>
+
+                    <fieldset class="o-choice-group">
+                        <legend class="visually-hidden">Order type</legend>
+                        <div class="o-choice">
+                            <input type="radio" name="orderType" id="typePickup" value="PICKUP" checked>
+                            <label for="typePickup">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-store"/></svg>
+                                <span class="o-choice-text">
+                                    <span class="o-choice-title">Pickup</span>
+                                    <span class="o-choice-sub">Collect from the bakery</span>
+                                </span>
+                                <span class="o-choice-price">Free</span>
                             </label>
                         </div>
+                        <div class="o-choice">
+                            <input type="radio" name="orderType" id="typeDelivery" value="DELIVERY">
+                            <label for="typeDelivery">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-truck"/></svg>
+                                <span class="o-choice-text">
+                                    <span class="o-choice-title">Delivery</span>
+                                    <span class="o-choice-sub">Brought to your door</span>
+                                </span>
+                                <span class="o-choice-price"
+                                      th:text="'+ LKR ' + ${#numbers.formatDecimal(deliveryFee, 1, 'COMMA', 2, 'POINT')}">+ LKR 250.00</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <!-- Shown for delivery orders. Without JavaScript it stays visible and is simply ignored for pickup. -->
+                    <div class="o-field o-reveal" id="deliveryAddressGroup">
+                        <label for="deliveryAddress" class="form-label">Delivery address <span class="o-req" aria-hidden="true">*</span></label>
+                        <div class="o-input-icon o-input-icon--top">
+                            <svg class="o-icon" aria-hidden="true"><use href="#i-pin"/></svg>
+                            <textarea class="form-control" id="deliveryAddress" name="deliveryAddress" rows="3"
+                                      placeholder="House number, street, city" maxlength="250"
+                                      aria-describedby="deliveryAddress-hint deliveryAddress-error"></textarea>
+                        </div>
+                        <div id="deliveryAddress-hint" class="form-text">Required for delivery orders.</div>
+                        <div id="deliveryAddress-error" class="o-field-error" aria-live="polite"></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Summary column -->
+            <div class="col-lg-5 col-xl-4">
+                <aside class="o-card o-summary" aria-labelledby="summary-title">
+                    <h2 id="summary-title" class="o-card-title">Order summary</h2>
+
+                    <div class="o-summary-product">
+                        <span class="o-summary-thumb" aria-hidden="true"><svg class="o-icon"><use href="#i-cake"/></svg></span>
+                        <div>
+                            <div class="o-summary-name" data-summary="productName">No product entered yet</div>
+                            <div class="o-summary-meta" data-summary="productId">&mdash;</div>
+                        </div>
                     </div>
 
-                    <!-- Delivery Address (conditional) -->
-                    <div class="mb-4" id="deliveryAddressGroup" style="display:none;">
-                        <label for="deliveryAddress" class="form-label">Delivery Address</label>
-                        <textarea class="form-control" id="deliveryAddress" name="deliveryAddress"
-                                  rows="2" placeholder="Enter full delivery address"></textarea>
-                    </div>
+                    <dl class="o-price-list" aria-live="polite">
+                        <div><dt>Unit price</dt><dd data-summary="unitPrice">&mdash;</dd></div>
+                        <div><dt>Quantity</dt><dd data-summary="quantity">1</dd></div>
+                        <div><dt>Subtotal</dt><dd data-summary="subtotal">&mdash;</dd></div>
+                        <div><dt>Delivery fee</dt><dd data-summary="deliveryFee">Free (pickup)</dd></div>
+                        <div class="o-price-total"><dt>Estimated total</dt><dd data-summary="total">&mdash;</dd></div>
+                    </dl>
 
-                    <!-- Live total -->
-                    <div class="total-box mb-4" id="totalBox" style="display:none;">
-                        <div class="total-label">Estimated Total</div>
-                        <div class="total-amount" id="totalAmount">LKR 0.00</div>
-                        <div class="small mt-1" id="totalBreakdown"></div>
-                    </div>
+                    <p class="o-summary-note">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                        Your order total is confirmed when the order is saved.
+                    </p>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-bakery px-5">Place Order</button>
-                        <a th:href="@{/orders}" class="btn btn-outline-secondary">Cancel</a>
-                    </div>
-                </form>
+                    <button type="submit" class="btn btn-o-primary btn-lg w-100" data-submit-label="Placing order&hellip;">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-check"/></svg>Place Order
+                    </button>
+                    <a th:href="@{/orders}" class="btn btn-o-ghost w-100 mt-2">Cancel</a>
+                </aside>
             </div>
         </div>
-    </div>
+    </form>
 
 </main>
-<footer th:replace="~{fragments/layout :: footer}"></footer>
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-<script>
-function toggleDelivery() {
-    const isDelivery = document.getElementById('typeDelivery').checked;
-    document.getElementById('deliveryAddressGroup').style.display = isDelivery ? 'block' : 'none';
-    document.getElementById('deliveryAddress').required = isDelivery;
-    updateTotal();
-}
-
-function updateTotal() {
-    const qty = parseFloat(document.getElementById('quantity').value) || 0;
-    const price = parseFloat(document.getElementById('unitPrice').value) || 0;
-    const isDelivery = document.getElementById('typeDelivery').checked;
-    const deliveryFee = isDelivery ? 250 : 0;
-    const subtotal = qty * price;
-    const total = subtotal + deliveryFee;
-
-    const totalBox = document.getElementById('totalBox');
-    const totalAmount = document.getElementById('totalAmount');
-    const breakdown = document.getElementById('totalBreakdown');
-
-    if (qty > 0 && price > 0) {
-        totalBox.style.display = 'block';
-        totalAmount.textContent = 'LKR ' + total.toFixed(2);
-        breakdown.textContent = qty + ' × LKR ' + price.toFixed(2) + (isDelivery ? ' + LKR 250.00 delivery' : '');
-    } else {
-        totalBox.style.display = 'none';
-    }
-}
-</script>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+<th:block th:replace="~{order/fragments/order-ui :: scripts}"></th:block>
 </body>
 </html>
