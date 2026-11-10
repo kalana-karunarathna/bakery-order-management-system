@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin :: head('Edit Cake Booking', null)}"></head>
+<body class="admin-ui">
+<header th:replace="~{fragments/admin :: topbar}"></header>
+
+<div class="a-shell">
+    <nav th:replace="~{fragments/admin :: sidebar('cakes')}"></nav>
+
+    <main id="main-content" class="a-content">
+
+        <div class="mb-3">
+            <a class="link-secondary text-decoration-none" th:href="@{/cake-bookings/admin}">← Back to Cake Orders</a>
+        </div>
+
+        <h1 class="h3 fw-bold mb-1">
+            Admin Edit Booking <span th:text="${booking.bookingId}">CB001</span>
+        </h1>
+        <p class="text-secondary small mb-4">
+            Customer ID: <strong th:text="${booking.customerId}">U001</strong> · Admin override mode.
+        </p>
+
+        <!-- Error Alert -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <form th:action="@{/cake-bookings/admin/{id}/edit(id=${booking.bookingId})}"
+              method="post" enctype="multipart/form-data" class="card shadow-sm border-0 p-4">
+
+            <div class="row g-3">
+
+                <!-- ── Status Setting (Admin can change status anytime) ── -->
+                <div class="col-md-6">
+                    <label for="status" class="form-label fw-bold">Order Fulfillment Status *</label>
+                    <select id="status" name="status" class="form-select border-primary" required>
+                        <option th:each="st : ${statuses}"
+                                th:value="${st}"
+                                th:text="${st.label}"
+                                th:selected="${st == booking.status}"></option>
+                    </select>
+                </div>
+
+                <!-- ── Price Setting (Admin can edit/override final price) ── -->
+                <div class="col-md-6">
+                    <label for="price" class="form-label fw-bold">Price (Rs.) *</label>
+                    <div class="input-group">
+                        <span class="input-group-text fw-semibold">Rs.</span>
+                        <input type="number" id="price" name="price" class="form-control border-success"
+                               step="0.01" min="0" required
+                               th:value="${booking.price}">
+                    </div>
+                    <div class="form-text">Calculated auto-estimate is Rs. <span th:text="${#numbers.formatDecimal(booking.cake.calculatePrice(), 1, 2)}"></span></div>
+                </div>
+
+                <!-- ── Cake Type ── -->
+                <div class="col-md-6">
+                    <label for="cakeType" class="form-label fw-semibold">Cake Type *</label>
+                    <select id="cakeType" name="cakeType" class="form-select" required
+                            onchange="showExtraFields(this.value)">
+                        <option value="BIRTHDAY"    th:selected="${booking.cake.getCakeType() == 'Birthday Cake'}">Birthday Cake</option>
+                        <option value="WEDDING"     th:selected="${booking.cake.getCakeType() == 'Wedding Cake'}">Wedding Cake</option>
+                        <option value="ANNIVERSARY" th:selected="${booking.cake.getCakeType() == 'Anniversary Cake'}">Anniversary Cake</option>
+                        <option value="GENERAL"     th:selected="${booking.cake.getCakeType() == 'General Custom Cake'}">General Custom Cake</option>
+                    </select>
+                </div>
+
+                <!-- ── Flavour ── -->
+                <div class="col-md-6">
+                    <label for="flavour" class="form-label fw-semibold">Flavour *</label>
+                    <input type="text" id="flavour" name="flavour" class="form-control"
+                           required th:value="${booking.cake.flavour}">
+                </div>
+
+                <!-- ── Weight ── -->
+                <div class="col-md-3">
+                    <label for="weightKg" class="form-label fw-semibold">Weight (kg) *</label>
+                    <input type="number" id="weightKg" name="weightKg" class="form-control"
+                           min="0.5" max="50" step="0.5" required th:value="${booking.cake.weightKg}">
+                </div>
+
+                <!-- ── Tiers ── -->
+                <div class="col-md-3">
+                    <label for="tiers" class="form-label fw-semibold">Tiers *</label>
+                    <input type="number" id="tiers" name="tiers" class="form-control"
+                           min="1" max="10" required th:value="${booking.cake.tiers}">
+                </div>
+
+                <!-- ── Delivery Date ── -->
+                <div class="col-md-6">
+                    <label for="deliveryDate" class="form-label fw-semibold">Delivery Date *</label>
+                    <input type="date" id="deliveryDate" name="deliveryDate" class="form-control"
+                           th:value="${booking.deliveryDate}">
+                </div>
+
+                <!-- ── Contact Phone ── -->
+                <div class="col-md-6">
+                    <label for="contactPhone" class="form-label fw-semibold">Contact Phone *</label>
+                    <input type="tel" id="contactPhone" name="contactPhone" class="form-control"
+                           required th:value="${booking.contactPhone}">
+                </div>
+
+                <!-- ── Design Image Replacement ── -->
+                <div class="col-12">
+                    <label for="designImage" class="form-label fw-semibold">Replace Design Picture</label>
+                    <div th:if="${booking.imageFileName != null}" class="mb-2">
+                        <img th:src="@{/cake-images/{f}(f=${booking.imageFileName})}"
+                             alt="Current design" class="rounded border" style="max-height:80px;">
+                        <span class="text-secondary small ms-2">Current image</span>
+                    </div>
+                    <input type="file" id="designImage" name="designImage" class="form-control"
+                           accept="image/jpeg,image/png,image/webp">
+                </div>
+
+                <!-- ── Message on Cake ── -->
+                <div class="col-12">
+                    <label for="messageOnCake" class="form-label fw-semibold">Message on Cake</label>
+                    <input type="text" id="messageOnCake" name="messageOnCake" class="form-control"
+                           th:value="${booking.cake.messageOnCake}">
+                </div>
+
+                <!-- ── Special Instructions ── -->
+                <div class="col-12">
+                    <label for="specialInstructions" class="form-label fw-semibold">Special Instructions</label>
+                    <textarea id="specialInstructions" name="specialInstructions" class="form-control"
+                              rows="2" th:text="${booking.cake.specialInstructions}"></textarea>
+                </div>
+
+                <!-- ══ Dynamic extras ══ -->
+                <div id="extras-BIRTHDAY" class="col-12 d-none">
+                    <div class="row g-3 border rounded p-3 bg-light">
+                        <div class="col-sm-6">
+                            <label for="birthdayAge" class="form-label">Birthday Person's Age</label>
+                            <input type="number" id="birthdayAge" name="extra1" class="form-control"
+                                   th:value="${booking.cake.getCakeType() == 'Birthday Cake' ? booking.cake.age : ''}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="candles" class="form-label">Candles</label>
+                            <input type="number" id="candles" name="extra2" class="form-control"
+                                   th:value="${booking.cake.getCakeType() == 'Birthday Cake' ? booking.cake.candles : '0'}">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="extras-WEDDING" class="col-12 d-none">
+                    <div class="row g-3 border rounded p-3 bg-light">
+                        <div class="col-sm-6">
+                            <label class="form-label">Floral Decoration?</label>
+                            <select id="floralDecoration" name="extra1" class="form-select">
+                                <option value="false" th:selected="${booking.cake.getCakeType() == 'Wedding Cake' and !booking.cake.floralDecoration}">No</option>
+                                <option value="true" th:selected="${booking.cake.getCakeType() == 'Wedding Cake' and booking.cake.floralDecoration}">Yes</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="venueName" class="form-label">Venue</label>
+                            <input type="text" id="venueName" name="extra2" class="form-control"
+                                   th:value="${booking.cake.getCakeType() == 'Wedding Cake' ? booking.cake.venueName : ''}">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="extras-ANNIVERSARY" class="col-12 d-none">
+                    <div class="row g-3 border rounded p-3 bg-light">
+                        <div class="col-sm-6">
+                            <label for="years" class="form-label">Anniversary Years</label>
+                            <input type="number" id="years" name="extra1" class="form-control"
+                                   th:value="${booking.cake.getCakeType() == 'Anniversary Cake' ? booking.cake.yearsOfAnniversary : ''}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="dedicationQuote" class="form-label">Quote</label>
+                            <input type="text" id="dedicationQuote" name="extra2" class="form-control"
+                                   th:value="${booking.cake.getCakeType() == 'Anniversary Cake' ? booking.cake.dedicationQuote : ''}">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="extras-GENERAL" class="col-12 d-none">
+                    <div class="border rounded p-3 bg-light">
+                        <label for="occasionDescription" class="form-label">Occasion</label>
+                        <input type="text" id="occasionDescription" name="extra1" class="form-control"
+                               th:value="${booking.cake.getCakeType() == 'General Custom Cake' ? booking.cake.occasionDescription : ''}">
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary fw-semibold px-4">Save Changes</button>
+                <a th:href="@{/cake-bookings/admin}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+
+        </form>
+
+    </main>
+</div>
+
+<th:block th:replace="~{fragments/admin :: scripts}"></th:block>
+
+<script>
+    function showExtraFields(type) {
+        const types = ['BIRTHDAY', 'WEDDING', 'ANNIVERSARY', 'GENERAL'];
+        types.forEach(t => {
+            const panel = document.getElementById('extras-' + t);
+            if (panel) {
+                const isSelected = (t === type);
+                panel.classList.toggle('d-none', !isSelected);
+                panel.querySelectorAll('input, select, textarea').forEach(el => {
+                    el.disabled = !isSelected;
+                });
+            }
+        });
+    }
+    (function () {
+        const sel = document.getElementById('cakeType');
+        showExtraFields(sel ? sel.value : '');
+    })();
+</script>
+</body>
+</html>
+
