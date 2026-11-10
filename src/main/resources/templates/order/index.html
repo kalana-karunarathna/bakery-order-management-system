@@ -1,20 +1,115 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Order Management')}"></head>
-<body>
-<header th:replace="~{fragments/layout :: header}"></header>
-<main id="main-content" class="container py-5">
-    <a class="link-secondary" th:href="@{/}">Back to home</a>
-    <h1 class="display-6 fw-bold mt-4">Order Management</h1>
-    <p class="lead">Place bakery orders and follow their progress.</p>
-    <div class="card module-card mt-4">
-        <div class="card-body p-4">
-            <h2 class="h5">Coming soon</h2>
-            <p class="mb-0">This section is being prepared. Please check back for updates.</p>
+<head th:replace="~{order/fragments/order-ui :: head('Order Management')}"></head>
+<body class="order-ui sf-body">
+<svg th:replace="~{order/fragments/order-ui :: icons}"></svg>
+<header th:replace="~{fragments/storefront :: header('orders')}"></header>
+<main id="main-content" class="container o-main"
+      th:with="deliveryFee=${T(com.bakery.order.model.DeliveryOrder).DELIVERY_FEE}">
+
+    <nav class="o-back" aria-label="Breadcrumb">
+        <a th:href="@{/}"><svg class="o-icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>Home</a>
+    </nav>
+
+    <div th:replace="~{order/fragments/order-ui :: flash}"></div>
+
+    <!-- Hero -->
+    <section class="o-hero" aria-labelledby="orders-hero-title">
+        <div class="o-hero-copy">
+            <p class="o-eyebrow">Order Management</p>
+            <h1 id="orders-hero-title" class="o-display">Fresh from our oven, ordered your way.</h1>
+            <p class="o-lead">
+                Place an order for your favourite bakes, choose to collect it from the bakery or have it
+                delivered, and follow every step until it reaches you.
+            </p>
+            <div class="o-hero-actions">
+                <a th:href="@{/orders/place}" class="btn btn-o-primary btn-lg">
+                    <svg class="o-icon" aria-hidden="true"><use href="#i-bag"/></svg>Place New Order
+                </a>
+                <a th:href="@{/orders/my-orders}" class="btn btn-o-outline btn-lg">
+                    <svg class="o-icon" aria-hidden="true"><use href="#i-receipt"/></svg>View My Orders
+                </a>
+            </div>
         </div>
-    </div>
+
+        <aside class="o-hero-card" aria-labelledby="how-it-works-title">
+            <img class="o-hero-card-img" th:src="@{/images/bakery/product-pastries.webp}" width="560" height="700"
+                 alt="Croissants and chocolate pastries on a wooden board with baking tools">
+            <h2 id="how-it-works-title" class="o-hero-card-title">How ordering works</h2>
+            <ol class="o-howto">
+                <li>
+                    <span class="o-howto-num" aria-hidden="true">1</span>
+                    <div><strong>Choose your bake</strong><p>Tell us what you'd like and how many.</p></div>
+                </li>
+                <li>
+                    <span class="o-howto-num" aria-hidden="true">2</span>
+                    <div><strong>Pickup or delivery</strong><p>Collect for free, or add delivery to your door.</p></div>
+                </li>
+                <li>
+                    <span class="o-howto-num" aria-hidden="true">3</span>
+                    <div><strong>Track your order</strong><p>Pending &rarr; Preparing &rarr; Ready &rarr; Delivered.</p></div>
+                </li>
+            </ol>
+        </aside>
+    </section>
+
+    <!-- Navigation cards -->
+    <section class="o-section" aria-labelledby="orders-nav-title">
+        <h2 id="orders-nav-title" class="visually-hidden">Order options</h2>
+        <div class="row g-4">
+            <div class="col-md-6">
+                <a th:href="@{/orders/place}" class="o-nav-card">
+                    <span class="o-nav-card-icon"><svg class="o-icon" aria-hidden="true"><use href="#i-bag"/></svg></span>
+                    <span class="o-nav-card-body">
+                        <span class="o-nav-card-title">Place an order</span>
+                        <span class="o-nav-card-text">Pick your item, set the quantity and see your total before you confirm.</span>
+                    </span>
+                    <svg class="o-icon o-nav-card-arrow" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a th:href="@{/orders/my-orders}" class="o-nav-card">
+                    <span class="o-nav-card-icon"><svg class="o-icon" aria-hidden="true"><use href="#i-receipt"/></svg></span>
+                    <span class="o-nav-card-body">
+                        <span class="o-nav-card-title">My orders</span>
+                        <span class="o-nav-card-text">Look up your order history, check progress, and edit or cancel pending orders.</span>
+                    </span>
+                    <svg class="o-icon o-nav-card-arrow" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ordering policies (taken from the actual business rules) -->
+    <section class="o-section" aria-labelledby="orders-info-title">
+        <h2 id="orders-info-title" class="o-section-title">Good to know</h2>
+        <div class="row g-3">
+            <div class="col-sm-6 col-lg-4">
+                <div class="o-info-tile">
+                    <svg class="o-icon" aria-hidden="true"><use href="#i-store"/></svg>
+                    <div><strong>Free pickup</strong><p>Collect your order from the bakery at no extra cost.</p></div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="o-info-tile">
+                    <svg class="o-icon" aria-hidden="true"><use href="#i-truck"/></svg>
+                    <div><strong>Flat-rate delivery</strong>
+                        <p>A flat <span th:text="'LKR ' + ${#numbers.formatDecimal(deliveryFee, 1, 'COMMA', 2, 'POINT')}">LKR 250.00</span>
+                            delivery fee is added per order.</p></div>
+                </div>
+            </div>
+            <div class="col-sm-12 col-lg-4">
+                <div class="o-info-tile">
+                    <svg class="o-icon" aria-hidden="true"><use href="#i-clock"/></svg>
+                    <div><strong>Change of plans?</strong><p>Orders can be edited or cancelled while they are still Pending.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
 </main>
-<footer th:replace="~{fragments/layout :: footer}"></footer>
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+<th:block th:replace="~{order/fragments/order-ui :: scripts}"></th:block>
 </body>
 </html>

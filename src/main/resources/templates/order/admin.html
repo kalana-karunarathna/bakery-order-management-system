@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin :: head('Order Management', '/css/orders.css')}"></head>
+<!-- ADMIN only: protected by SecurityConfig (/orders/admin) and @PreAuthorize in OrderController. -->
+<body class="admin-ui order-ui order-admin">
+<svg th:replace="~{order/fragments/order-ui :: icons}"></svg>
+<header th:replace="~{fragments/admin :: topbar}"></header>
+<div class="a-shell">
+<nav th:replace="~{fragments/admin :: sidebar('orders')}"></nav>
+<main id="main-content" class="a-content o-admin-main">
+
+    <header class="o-page-head o-page-head--split">
+        <div>
+            <p class="o-eyebrow mb-1">Order Management</p>
+            <h1 class="o-title">Orders</h1>
+            <p class="o-subtitle">Track every order, move it through the kitchen and keep records tidy.</p>
+        </div>
+    </header>
+
+    <div th:replace="~{order/fragments/order-ui :: flash}"></div>
+
+    <th:block th:if="${orders != null}">
+
+        <!-- Summary statistics, computed from the loaded orders. Each tile also filters the table. -->
+        <section class="o-stats" aria-label="Order statistics">
+            <button type="button" class="o-stat o-stat--total is-active" data-filter-status="" aria-pressed="true">
+                <span class="o-stat-label">Total orders</span>
+                <span class="o-stat-value" th:text="${orders.size()}">0</span>
+            </button>
+            <button type="button" class="o-stat o-stat--pending" data-filter-status="PENDING" aria-pressed="false">
+                <span class="o-stat-label"><span class="o-status-dot" aria-hidden="true"></span>Pending</span>
+                <span class="o-stat-value" th:text="${#lists.size(orders.?[status.name() == 'PENDING'])}">0</span>
+            </button>
+            <button type="button" class="o-stat o-stat--preparing" data-filter-status="PREPARING" aria-pressed="false">
+                <span class="o-stat-label"><span class="o-status-dot" aria-hidden="true"></span>Preparing</span>
+                <span class="o-stat-value" th:text="${#lists.size(orders.?[status.name() == 'PREPARING'])}">0</span>
+            </button>
+            <button type="button" class="o-stat o-stat--ready" data-filter-status="READY" aria-pressed="false">
+                <span class="o-stat-label"><span class="o-status-dot" aria-hidden="true"></span>Ready</span>
+                <span class="o-stat-value" th:text="${#lists.size(orders.?[status.name() == 'READY'])}">0</span>
+            </button>
+            <button type="button" class="o-stat o-stat--delivered" data-filter-status="DELIVERED" aria-pressed="false">
+                <span class="o-stat-label"><span class="o-status-dot" aria-hidden="true"></span>Delivered</span>
+                <span class="o-stat-value" th:text="${#lists.size(orders.?[status.name() == 'DELIVERED'])}">0</span>
+            </button>
+            <button type="button" class="o-stat o-stat--cancelled" data-filter-status="CANCELLED" aria-pressed="false">
+                <span class="o-stat-label"><span class="o-status-dot" aria-hidden="true"></span>Cancelled</span>
+                <span class="o-stat-value" th:text="${#lists.size(orders.?[status.name() == 'CANCELLED'])}">0</span>
+            </button>
+        </section>
+
+        <!-- Orders table -->
+        <section th:if="${!orders.isEmpty()}" class="o-card o-table-card" aria-labelledby="orders-table-title">
+            <div class="o-table-toolbar">
+                <h2 id="orders-table-title" class="o-card-title mb-0">All orders</h2>
+                <div class="o-table-filters">
+                    <div class="o-input-icon">
+                        <label for="orderSearch" class="visually-hidden">Search orders</label>
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-search"/></svg>
+                        <input type="search" id="orderSearch" class="form-control form-control-sm"
+                               placeholder="Search ID, customer, product" autocomplete="off">
+                    </div>
+                    <label for="statusFilter" class="visually-hidden">Filter by status</label>
+                    <select id="statusFilter" class="form-select form-select-sm">
+                        <option value="">All statuses</option>
+                        <option th:each="s : ${statuses}" th:value="${s.name()}"
+                                th:text="${#strings.capitalize(#strings.toLowerCase(s.name()))}">Pending</option>
+                    </select>
+                    <button type="button" class="btn btn-o-ghost btn-sm" id="clearFilters" hidden>Clear</button>
+                </div>
+            </div>
+            <p class="o-table-count" id="orderCount" aria-live="polite"
+               th:text="'Showing ' + ${orders.size()} + ' of ' + ${orders.size()} + ' orders'">Showing all orders</p>
+
+            <div class="o-table-wrap">
+                <table class="o-table" id="ordersTable">
+                    <caption class="visually-hidden">All bakery orders with status controls</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Order</th>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Product</th>
+                        <th scope="col" class="text-end">Qty</th>
+                        <th scope="col" class="text-end">Total</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Update status</th>
+                        <th scope="col"><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="order : ${orders}" data-order-row
+                        th:attr="data-status=${order.status.name()},
+                                 data-search=${#strings.toLowerCase(order.id + ' ' + order.customerId + ' ' + order.productId + ' ' + order.productName)}">
+                        <td data-label="Order"><span class="o-mono fw-semibold" th:text="${order.id}">O001</span></td>
+                        <td data-label="Customer"><span class="o-mono" th:text="${order.customerId}">U001</span></td>
+                        <td data-label="Product">
+                            <div class="o-table-product" th:text="${order.productName}">Chocolate Fudge Cake</div>
+                            <div class="o-table-sub">
+                                <span class="o-mono" th:text="${order.productId}">P001</span> &middot;
+                                <span th:replace="~{order/fragments/order-ui :: type(${order})}"></span>
+                            </div>
+                        </td>
+                        <td data-label="Qty" class="text-end" th:text="${order.quantity}">2</td>
+                        <td data-label="Total" class="text-end o-money"
+                            th:text="'LKR ' + ${#numbers.formatDecimal(order.calculateTotal(), 1, 'COMMA', 2, 'POINT')}">LKR 2,650.00</td>
+                        <td data-label="Date">
+                            <time th:datetime="${order.orderDate}" th:text="${#temporals.format(order.orderDate, 'd MMM yyyy')}">14 Oct 2026</time>
+                        </td>
+                        <td data-label="Status"><span th:replace="~{order/fragments/order-ui :: status(${order})}"></span></td>
+                        <td data-label="Update status"
+                            th:with="next=${T(com.bakery.order.service.OrderService).nextStatuses(order.status)}">
+                            <!-- Only the next allowed statuses are offered; OrderService enforces the same workflow. -->
+                            <form th:unless="${next.isEmpty()}"
+                                  th:action="@{/orders/{id}/status(id=${order.id})}" method="post" class="o-status-form"
+                                  th:attr="data-current-status=${order.status.name()}">
+                                <label th:for="'status-' + ${order.id}" class="visually-hidden"
+                                       th:text="'New status for order ' + ${order.id}">New status</label>
+                                <select name="status" th:id="'status-' + ${order.id}" class="form-select form-select-sm">
+                                    <option th:value="${order.status.name()}" selected
+                                            th:text="${#strings.capitalize(#strings.toLowerCase(order.status.name()))}">Pending</option>
+                                    <option th:each="s : ${statuses}" th:if="${next.contains(s)}"
+                                            th:value="${s.name()}"
+                                            th:text="${#strings.capitalize(#strings.toLowerCase(s.name()))}">Preparing</option>
+                                </select>
+                                <button type="submit" class="btn btn-o-primary btn-sm"
+                                        th:attr="aria-label='Update status of order ' + ${order.id}">Update</button>
+                            </form>
+                            <span th:if="${next.isEmpty()}" class="o-locked-note">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-check-circle"/></svg>
+                                <th:block th:text="${order.status.name() == 'CANCELLED'} ? 'Cancelled orders are final' : 'Delivered orders are final'">Final</th:block>
+                            </span>
+                        </td>
+                        <td data-label="Actions" class="o-row-actions">
+                            <a th:href="@{/orders/{id}(id=${order.id})}" class="btn btn-o-icon"
+                               th:attr="aria-label='View order ' + ${order.id}" th:title="'View order ' + ${order.id}">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-eye"/></svg>
+                            </a>
+                            <form th:action="@{/orders/{id}/delete(id=${order.id})}" method="post" class="d-inline"
+                                  data-confirm-title="Delete this order permanently?"
+                                  th:attr="data-confirm='Order ' + ${order.id} + ' for customer ' + ${order.customerId} + ' will be removed from the records. This cannot be undone.'"
+                                  data-confirm-action="Delete order" data-confirm-cancel="Keep order">
+                                <button type="submit" class="btn btn-o-icon btn-o-icon--danger"
+                                        th:attr="aria-label='Delete order ' + ${order.id}" th:title="'Delete order ' + ${order.id}">
+                                    <svg class="o-icon" aria-hidden="true"><use href="#i-trash"/></svg>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="o-empty o-empty--compact" id="noMatches" hidden>
+                    <span class="o-empty-icon" aria-hidden="true"><svg class="o-icon"><use href="#i-search"/></svg></span>
+                    <h3 class="o-empty-title">No matching orders</h3>
+                    <p class="o-empty-text">Try a different search term or status filter.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- No orders at all -->
+        <section th:if="${orders.isEmpty()}" class="o-empty">
+            <span class="o-empty-icon" aria-hidden="true"><svg class="o-icon"><use href="#i-receipt"/></svg></span>
+            <h2 class="o-empty-title">No orders yet</h2>
+            <p class="o-empty-text">New customer orders will appear here as soon as they are placed.</p>
+        </section>
+    </th:block>
+
+</main>
+</div>
+<dialog th:replace="~{order/fragments/order-ui :: confirm-dialog}"></dialog>
+<th:block th:replace="~{order/fragments/order-ui :: scripts}"></th:block>
+</body>
+</html>

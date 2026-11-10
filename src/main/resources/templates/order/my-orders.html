@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{order/fragments/order-ui :: head('My Orders')}"></head>
+<body class="order-ui sf-body">
+<svg th:replace="~{order/fragments/order-ui :: icons}"></svg>
+<header th:replace="~{fragments/storefront :: header('orders')}"></header>
+<main id="main-content" class="container o-main">
+
+    <nav class="o-back" aria-label="Breadcrumb">
+        <a th:href="@{/orders}"><svg class="o-icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>Orders</a>
+    </nav>
+
+    <header class="o-page-head o-page-head--split">
+        <div>
+            <p class="o-eyebrow">Order history</p>
+            <h1 class="o-title">My orders</h1>
+            <p class="o-subtitle">Check the progress of your orders, make changes or cancel while they are pending.</p>
+        </div>
+        <a th:href="@{/orders/place}" class="btn btn-o-primary">
+            <svg class="o-icon" aria-hidden="true"><use href="#i-bag"/></svg>Place New Order
+        </a>
+    </header>
+
+    <!-- Orders are always those of the signed-in customer; there is no customer ID input. -->
+    <div th:replace="~{order/fragments/order-ui :: flash}"></div>
+
+    <!-- Results -->
+    <section th:if="${orders != null and !orders.isEmpty()}" class="o-section mt-0" aria-labelledby="results-title">
+        <div class="o-results-head">
+            <h2 id="results-title" class="o-section-title mb-0">
+                Orders for <span th:text="${customerName}">Nimal Perera</span>
+            </h2>
+            <span class="o-count-chip" th:text="${orders.size()} + (${orders.size() == 1} ? ' order' : ' orders')">3 orders</span>
+        </div>
+
+        <ul class="o-order-list">
+            <li th:each="order : ${orders}" class="o-order-card">
+                <div class="o-order-card-main">
+                    <span class="o-order-thumb" aria-hidden="true"><svg class="o-icon"><use href="#i-cake"/></svg></span>
+                    <div class="o-order-card-info">
+                        <h3 class="o-order-card-title" th:text="${order.productName}">Chocolate Fudge Cake</h3>
+                        <p class="o-order-card-meta">
+                            <span class="o-mono" th:text="${order.id}">O001</span>
+                            <span aria-hidden="true">&middot;</span>
+                            <span>Ordered <time th:datetime="${order.orderDate}"
+                                                th:text="${#temporals.format(order.orderDate, 'd MMM yyyy')}">14 Oct 2026</time></span>
+                        </p>
+                    </div>
+                    <span th:replace="~{order/fragments/order-ui :: status(${order})}"></span>
+                </div>
+
+                <dl class="o-order-card-facts">
+                    <div><dt>Quantity</dt><dd th:text="${order.quantity}">2</dd></div>
+                    <div><dt>Type</dt><dd><span th:replace="~{order/fragments/order-ui :: type(${order})}"></span></dd></div>
+                    <div><dt>Total</dt>
+                        <dd class="o-money" th:text="'LKR ' + ${#numbers.formatDecimal(order.calculateTotal(), 1, 'COMMA', 2, 'POINT')}">LKR 2,650.00</dd></div>
+                </dl>
+
+                <div class="o-order-card-actions">
+                    <a th:href="@{/orders/{id}(id=${order.id})}" class="btn btn-o-outline btn-sm"
+                       th:attr="aria-label='View details of order ' + ${order.id}">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-eye"/></svg>View details
+                    </a>
+                    <th:block th:if="${order.editable}">
+                        <a th:href="@{/orders/{id}/edit(id=${order.id})}" class="btn btn-o-ghost btn-sm"
+                           th:attr="aria-label='Edit order ' + ${order.id}">
+                            <svg class="o-icon" aria-hidden="true"><use href="#i-edit"/></svg>Edit
+                        </a>
+                        <form th:action="@{/orders/{id}/cancel(id=${order.id})}" method="post" class="d-inline"
+                              data-confirm-title="Cancel this order?"
+                              th:attr="data-confirm='Order ' + ${order.id} + ' (' + ${order.productName} + ') will be cancelled and will not be prepared.'"
+                              data-confirm-action="Yes, cancel order">
+                            <button type="submit" class="btn btn-o-danger-ghost btn-sm"
+                                    th:attr="aria-label='Cancel order ' + ${order.id}">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-x-circle"/></svg>Cancel
+                            </button>
+                        </form>
+                    </th:block>
+                    <span th:unless="${order.editable}" class="o-locked-note">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                        <th:block th:text="${order.status.name() == 'CANCELLED'} ? 'Cancelled orders cannot be changed' : 'Changes are only possible while Pending'">Changes are only possible while Pending</th:block>
+                    </span>
+                </div>
+            </li>
+        </ul>
+    </section>
+
+    <!-- No orders yet -->
+    <section th:if="${orders != null and orders.isEmpty()}" class="o-empty">
+        <span class="o-empty-icon" aria-hidden="true"><svg class="o-icon"><use href="#i-receipt"/></svg></span>
+        <h2 class="o-empty-title">No orders yet</h2>
+        <p class="o-empty-text">When you place an order it will appear here, so you can follow it from the oven to your door.</p>
+        <a th:href="@{/orders/place}" class="btn btn-o-primary">Place your first order</a>
+    </section>
+
+</main>
+<dialog th:replace="~{order/fragments/order-ui :: confirm-dialog}"></dialog>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+<th:block th:replace="~{order/fragments/order-ui :: scripts}"></th:block>
+</body>
+</html>

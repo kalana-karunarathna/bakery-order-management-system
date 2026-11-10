@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{order/fragments/order-ui :: head('Place Order')}"></head>
+<body class="order-ui sf-body">
+<svg th:replace="~{order/fragments/order-ui :: icons}"></svg>
+<header th:replace="~{fragments/storefront :: header('orders')}"></header>
+<main id="main-content" class="container o-main"
+      th:with="deliveryFee=${T(com.bakery.order.model.DeliveryOrder).DELIVERY_FEE}">
+
+    <nav class="o-back" aria-label="Breadcrumb">
+        <a th:href="@{/orders}"><svg class="o-icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>Orders</a>
+    </nav>
+
+    <header class="o-page-head">
+        <p class="o-eyebrow">New order</p>
+        <h1 class="o-title">Place an order</h1>
+        <p class="o-subtitle">Fill in the details below. Your total updates as you go.</p>
+    </header>
+
+    <div th:replace="~{order/fragments/order-ui :: flash}"></div>
+
+    <!--
+      POST /orders/place with productId, productName, quantity, unitPrice, orderType, deliveryAddress.
+      There is deliberately NO customerId field: the server uses the signed-in customer.
+      NOTE: unitPrice is still entered here (bounded and validated by OrderService; the total is
+      always calculated on the server). Once Product Management exposes its catalogue, the server
+      must look up the price by productId instead of accepting this value.
+    -->
+    <form th:action="@{/orders/place}" method="post" novalidate id="orderForm"
+          class="o-order-form" data-order-form="place"
+          th:attr="data-delivery-fee=${deliveryFee}">
+        <div class="row g-4 align-items-start">
+
+            <!-- Form column -->
+            <div class="col-lg-7 col-xl-8">
+
+                <!-- 1. Customer -->
+                <section class="o-card o-form-section" aria-labelledby="sec-customer">
+                    <div class="o-form-section-head">
+                        <span class="o-step-num" aria-hidden="true">1</span>
+                        <div>
+                            <h2 id="sec-customer" class="o-card-title">Your details</h2>
+                            <p class="o-card-sub">This order will be added to your account automatically.</p>
+                        </div>
+                    </div>
+                    <!-- Read-only: identity comes from the signed-in session, not from this form. -->
+                    <div class="o-account-card">
+                        <span class="o-account-avatar" aria-hidden="true" th:text="${customer.initials()}">NP</span>
+                        <div class="o-account-info">
+                            <strong th:text="${customer.fullName}">Nimal Perera</strong>
+                            <span th:text="${customer.email}">nimal@example.com</span>
+                            <span th:if="${!#strings.isEmpty(customer.phone)}" th:text="${customer.phone}">077 123 4567</span>
+                        </div>
+                        <span class="o-account-id">
+                            <span class="visually-hidden">Customer ID</span>
+                            <span class="o-mono" th:text="${customer.id}">U003</span>
+                        </span>
+                    </div>
+                    <p class="form-text mb-0">Not you? <a th:href="@{/profile}">Check your account</a>.</p>
+                </section>
+
+                <!-- 2. Product -->
+                <section class="o-card o-form-section" aria-labelledby="sec-product">
+                    <div class="o-form-section-head">
+                        <span class="o-step-num" aria-hidden="true">2</span>
+                        <div>
+                            <h2 id="sec-product" class="o-card-title">Product</h2>
+                            <p class="o-card-sub">Enter the product you would like to order.</p>
+                        </div>
+                    </div>
+
+                    <div class="o-integration-note">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                        <span>Product selection will be connected to the bakery catalogue (Product Management).
+                              Until then, please enter the product details manually.</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-sm-5 o-field">
+                            <label for="productId" class="form-label">Product ID <span class="o-req" aria-hidden="true">*</span></label>
+                            <input type="text" class="form-control" id="productId" name="productId"
+                                   placeholder="e.g. P001" required autocomplete="off" maxlength="40"
+                                   th:value="${form.productId}" aria-describedby="productId-error">
+                            <div id="productId-error" class="o-field-error" aria-live="polite"></div>
+                        </div>
+                        <div class="col-sm-7 o-field">
+                            <label for="productName" class="form-label">Product name <span class="o-req" aria-hidden="true">*</span></label>
+                            <input type="text" class="form-control" id="productName" name="productName"
+                                   placeholder="e.g. Chocolate Fudge Cake" required autocomplete="off" maxlength="100"
+                                   th:value="${form.productName}" aria-describedby="productName-error">
+                            <div id="productName-error" class="o-field-error" aria-live="polite"></div>
+                        </div>
+                        <div class="col-sm-6 o-field">
+                            <label for="unitPrice" class="form-label">Unit price <span class="o-req" aria-hidden="true">*</span></label>
+                            <div class="input-group o-input-group">
+                                <span class="input-group-text">LKR</span>
+                                <input type="number" class="form-control" id="unitPrice" name="unitPrice"
+                                       min="0.01" max="100000" step="0.01" placeholder="0.00" required inputmode="decimal"
+                                       th:value="${form.unitPrice}" aria-describedby="unitPrice-error">
+                            </div>
+                            <div id="unitPrice-error" class="o-field-error" aria-live="polite"></div>
+                        </div>
+                        <div class="col-sm-6 o-field">
+                            <label for="quantity" class="form-label">Quantity <span class="o-req" aria-hidden="true">*</span></label>
+                            <div class="o-stepper" data-stepper>
+                                <button type="button" class="o-stepper-btn" data-step="-1" aria-label="Decrease quantity">
+                                    <svg class="o-icon" aria-hidden="true"><use href="#i-minus"/></svg>
+                                </button>
+                                <input type="number" class="form-control" id="quantity" name="quantity"
+                                       min="1" max="100" step="1" th:value="${form.quantity}" required inputmode="numeric"
+                                       aria-describedby="quantity-error">
+                                <button type="button" class="o-stepper-btn" data-step="1" aria-label="Increase quantity">
+                                    <svg class="o-icon" aria-hidden="true"><use href="#i-plus"/></svg>
+                                </button>
+                            </div>
+                            <div id="quantity-error" class="o-field-error" aria-live="polite"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. Fulfilment -->
+                <section class="o-card o-form-section" aria-labelledby="sec-fulfilment">
+                    <div class="o-form-section-head">
+                        <span class="o-step-num" aria-hidden="true">3</span>
+                        <div>
+                            <h2 id="sec-fulfilment" class="o-card-title">Pickup or delivery</h2>
+                            <p class="o-card-sub">Choose how you'd like to receive your order.</p>
+                        </div>
+                    </div>
+
+                    <fieldset class="o-choice-group">
+                        <legend class="visually-hidden">Order type</legend>
+                        <div class="o-choice">
+                            <input type="radio" name="orderType" id="typePickup" value="PICKUP"
+                                   th:checked="${form.orderType != 'DELIVERY'}">
+                            <label for="typePickup">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-store"/></svg>
+                                <span class="o-choice-text">
+                                    <span class="o-choice-title">Pickup</span>
+                                    <span class="o-choice-sub">Collect from the bakery</span>
+                                </span>
+                                <span class="o-choice-price">Free</span>
+                            </label>
+                        </div>
+                        <div class="o-choice">
+                            <input type="radio" name="orderType" id="typeDelivery" value="DELIVERY"
+                                   th:checked="${form.orderType == 'DELIVERY'}">
+                            <label for="typeDelivery">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-truck"/></svg>
+                                <span class="o-choice-text">
+                                    <span class="o-choice-title">Delivery</span>
+                                    <span class="o-choice-sub">Brought to your door</span>
+                                </span>
+                                <span class="o-choice-price"
+                                      th:text="'+ LKR ' + ${#numbers.formatDecimal(deliveryFee, 1, 'COMMA', 2, 'POINT')}">+ LKR 250.00</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <!-- Shown for delivery orders. Without JavaScript it stays visible and is simply ignored for pickup. -->
+                    <div class="o-field o-reveal" id="deliveryAddressGroup">
+                        <label for="deliveryAddress" class="form-label">Delivery address <span class="o-req" aria-hidden="true">*</span></label>
+                        <div class="o-input-icon o-input-icon--top">
+                            <svg class="o-icon" aria-hidden="true"><use href="#i-pin"/></svg>
+                            <textarea class="form-control" id="deliveryAddress" name="deliveryAddress" rows="3"
+                                      placeholder="House number, street, city" maxlength="250"
+                                      th:text="${form.deliveryAddress}"
+                                      aria-describedby="deliveryAddress-hint deliveryAddress-error"></textarea>
+                        </div>
+                        <div id="deliveryAddress-hint" class="form-text">Required for delivery orders. Pre-filled from your profile.</div>
+                        <div id="deliveryAddress-error" class="o-field-error" aria-live="polite"></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Summary column -->
+            <div class="col-lg-5 col-xl-4">
+                <aside class="o-card o-summary" aria-labelledby="summary-title">
+                    <h2 id="summary-title" class="o-card-title">Order summary</h2>
+
+                    <div class="o-summary-product">
+                        <span class="o-summary-thumb" aria-hidden="true"><svg class="o-icon"><use href="#i-cake"/></svg></span>
+                        <div>
+                            <div class="o-summary-name" data-summary="productName">No product entered yet</div>
+                            <div class="o-summary-meta" data-summary="productId">&mdash;</div>
+                        </div>
+                    </div>
+
+                    <dl class="o-price-list" aria-live="polite">
+                        <div><dt>Unit price</dt><dd data-summary="unitPrice">&mdash;</dd></div>
+                        <div><dt>Quantity</dt><dd data-summary="quantity">1</dd></div>
+                        <div><dt>Subtotal</dt><dd data-summary="subtotal">&mdash;</dd></div>
+                        <div><dt>Delivery fee</dt><dd data-summary="deliveryFee">Free (pickup)</dd></div>
+                        <div class="o-price-total"><dt>Estimated total</dt><dd data-summary="total">&mdash;</dd></div>
+                    </dl>
+
+                    <p class="o-summary-note">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                        Your order total is confirmed when the order is saved.
+                    </p>
+
+                    <button type="submit" class="btn btn-o-primary btn-lg w-100" data-submit-label="Placing order&hellip;">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-check"/></svg>Place Order
+                    </button>
+                    <a th:href="@{/orders}" class="btn btn-o-ghost w-100 mt-2">Cancel</a>
+                </aside>
+            </div>
+        </div>
+    </form>
+
+</main>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+<th:block th:replace="~{order/fragments/order-ui :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{order/fragments/order-ui :: head('Order Detail')}"></head>
+<body class="order-ui sf-body">
+<svg th:replace="~{order/fragments/order-ui :: icons}"></svg>
+<header th:replace="~{fragments/storefront :: header('orders')}"></header>
+<main id="main-content" class="container o-main">
+
+    <nav class="o-back" aria-label="Breadcrumb">
+        <a th:href="${isAdmin} ? @{/orders/admin} : @{/orders/my-orders}">
+            <svg class="o-icon" aria-hidden="true"><use href="#i-arrow-left"/></svg><th:block th:text="${isAdmin} ? 'Order management' : 'My orders'">My orders</th:block>
+        </a>
+    </nav>
+
+    <div th:replace="~{order/fragments/order-ui :: flash}"></div>
+
+    <th:block th:if="${order}"
+              th:with="isDelivery=${order.orderType.name() == 'DELIVERY'},
+                       subtotal=${order.quantity * order.unitPrice}">
+
+        <header class="o-page-head o-page-head--split">
+            <div>
+                <p class="o-eyebrow">Order reference</p>
+                <h1 class="o-title">Order <span class="o-ref" th:text="${order.id}">O001</span></h1>
+                <p class="o-subtitle">
+                    Placed on <time th:datetime="${order.orderDate}"
+                                    th:text="${#temporals.format(order.orderDate, 'EEEE, d MMMM yyyy')}">Wednesday, 14 October 2026</time>
+                </p>
+            </div>
+            <div class="o-status-lg">
+                <span class="o-status-lg-label">Current status</span>
+                <span th:replace="~{order/fragments/order-ui :: status(${order})}"></span>
+            </div>
+        </header>
+
+        <div class="row g-4 align-items-start">
+
+            <!-- Main column -->
+            <div class="col-lg-8">
+
+                <!-- Progress -->
+                <section class="o-card" aria-labelledby="progress-title">
+                    <div class="o-card-head">
+                        <h2 id="progress-title" class="o-card-title">Order progress</h2>
+                        <span class="o-card-head-note" th:text="${order.statusLabel}">Preparing</span>
+                    </div>
+                    <div th:replace="~{order/fragments/order-ui :: progress(${order})}"></div>
+                </section>
+
+                <!-- Item -->
+                <section class="o-card" aria-labelledby="item-title">
+                    <h2 id="item-title" class="o-card-title">Item</h2>
+                    <div class="o-line-item">
+                        <span class="o-order-thumb" aria-hidden="true"><svg class="o-icon"><use href="#i-cake"/></svg></span>
+                        <div class="o-line-item-info">
+                            <div class="o-line-item-name" th:text="${order.productName}">Chocolate Fudge Cake</div>
+                            <div class="o-line-item-meta">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-tag"/></svg>
+                                Product ID <span class="o-mono" th:text="${order.productId}">P001</span>
+                            </div>
+                        </div>
+                        <div class="o-line-item-qty">
+                            <span th:text="${order.quantity}">2</span> &times;
+                            <span th:text="'LKR ' + ${#numbers.formatDecimal(order.unitPrice, 1, 'COMMA', 2, 'POINT')}">LKR 1,200.00</span>
+                        </div>
+                        <div class="o-line-item-total o-money"
+                             th:text="'LKR ' + ${#numbers.formatDecimal(subtotal, 1, 'COMMA', 2, 'POINT')}">LKR 2,400.00</div>
+                    </div>
+                </section>
+
+                <!-- Fulfilment + customer -->
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <section class="o-card h-100" aria-labelledby="fulfil-title">
+                            <h2 id="fulfil-title" class="o-card-title">
+                                <th:block th:text="${isDelivery} ? 'Delivery' : 'Pickup'">Delivery</th:block>
+                            </h2>
+                            <div class="o-info-row">
+                                <svg class="o-icon" aria-hidden="true"><use th:href="${isDelivery} ? '#i-truck' : '#i-store'" href="#i-truck"/></svg>
+                                <div>
+                                    <div class="o-info-label" th:text="${isDelivery} ? 'Home delivery' : 'Collect from the bakery'">Home delivery</div>
+                                    <div th:if="${isDelivery}" class="o-info-value o-address" th:text="${order.deliveryAddress}">42 Galle Road, Colombo 03</div>
+                                    <div th:unless="${isDelivery}" class="o-info-value">No delivery fee for pickup orders.</div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="col-md-6">
+                        <section class="o-card h-100" aria-labelledby="customer-title">
+                            <h2 id="customer-title" class="o-card-title">Customer</h2>
+                            <div class="o-info-row">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-user"/></svg>
+                                <div>
+                                    <div class="o-info-label">Customer ID</div>
+                                    <div class="o-info-value o-mono" th:text="${order.customerId}">U001</div>
+                                </div>
+                            </div>
+                            <div class="o-info-row">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-calendar"/></svg>
+                                <div>
+                                    <div class="o-info-label">Order date</div>
+                                    <div class="o-info-value" th:text="${#temporals.format(order.orderDate, 'd MMM yyyy')}">14 Oct 2026</div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side column -->
+            <div class="col-lg-4">
+                <aside class="o-card o-summary" aria-labelledby="payment-title">
+                    <h2 id="payment-title" class="o-card-title">Price breakdown</h2>
+                    <dl class="o-price-list">
+                        <div><dt>Unit price</dt>
+                            <dd th:text="'LKR ' + ${#numbers.formatDecimal(order.unitPrice, 1, 'COMMA', 2, 'POINT')}">LKR 1,200.00</dd></div>
+                        <div><dt>Quantity</dt><dd th:text="${order.quantity}">2</dd></div>
+                        <div><dt>Subtotal</dt>
+                            <dd th:text="'LKR ' + ${#numbers.formatDecimal(subtotal, 1, 'COMMA', 2, 'POINT')}">LKR 2,400.00</dd></div>
+                        <div><dt>Delivery fee</dt>
+                            <dd th:text="${isDelivery} ? 'LKR ' + ${#numbers.formatDecimal(order.deliveryFee, 1, 'COMMA', 2, 'POINT')} : 'Free (pickup)'">LKR 250.00</dd></div>
+                        <div class="o-price-total"><dt>Total</dt>
+                            <dd th:text="'LKR ' + ${#numbers.formatDecimal(order.calculateTotal(), 1, 'COMMA', 2, 'POINT')}">LKR 2,650.00</dd></div>
+                    </dl>
+
+                    <!-- Actions: only the owner may edit / cancel, and only while PENDING (also enforced on the server). -->
+                    <div th:if="${order.editable and isOwner and !isAdmin}" class="o-summary-actions">
+                        <a th:href="@{/orders/{id}/edit(id=${order.id})}" class="btn btn-o-primary w-100">
+                            <svg class="o-icon" aria-hidden="true"><use href="#i-edit"/></svg>Edit Order
+                        </a>
+                        <form th:action="@{/orders/{id}/cancel(id=${order.id})}" method="post"
+                              data-confirm-title="Cancel this order?"
+                              th:attr="data-confirm='Order ' + ${order.id} + ' will be cancelled and will not be prepared. This cannot be undone.'"
+                              data-confirm-action="Yes, cancel order">
+                            <button type="submit" class="btn btn-o-danger-ghost w-100">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-x-circle"/></svg>Cancel Order
+                            </button>
+                        </form>
+                        <p class="o-summary-note mb-0">
+                            <svg class="o-icon" aria-hidden="true"><use href="#i-clock"/></svg>
+                            You can edit or cancel while the order is Pending.
+                        </p>
+                    </div>
+
+                    <div th:if="${!order.editable and order.status.name() != 'CANCELLED'}" class="o-callout">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                        <span>This order is <strong th:text="${order.statusLabel}">Preparing</strong> and can no longer be changed.</span>
+                    </div>
+                    <div th:if="${order.status.name() == 'CANCELLED'}" class="o-callout o-callout--muted">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-x-circle"/></svg>
+                        <span>This order has been cancelled.</span>
+                    </div>
+                    <a th:if="${!order.editable and !isAdmin}" th:href="@{/orders/place}" class="btn btn-o-outline w-100 mt-3">Place a new order</a>
+                    <th:block th:if="${isAdmin}">
+                        <div th:if="${order.editable}" class="o-callout">
+                            <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                            <span>This order is <strong>Pending</strong>. Customers can still edit or cancel it.</span>
+                        </div>
+                        <a th:href="@{/orders/admin}" class="btn btn-o-primary w-100 mt-3">Manage status in Order management</a>
+                    </th:block>
+                </aside>
+            </div>
+        </div>
+    </th:block>
+
+</main>
+<dialog th:replace="~{order/fragments/order-ui :: confirm-dialog}"></dialog>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+<th:block th:replace="~{order/fragments/order-ui :: scripts}"></th:block>
+</body>
+</html>

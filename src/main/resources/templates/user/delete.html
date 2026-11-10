@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{user/fragments/user-ui :: head('Delete account')}"></head>
+<body class="user-ui">
+<svg th:replace="~{user/fragments/user-ui :: icons}"></svg>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container u-main">
+    <div class="u-narrow">
+        <a th:href="@{/profile}" class="u-back"><svg class="u-icon" aria-hidden="true"><use href="#u-arrow-left"/></svg>My account</a>
+        <header class="mb-4">
+            <p class="u-eyebrow">Delete account</p>
+            <h1 class="u-title">We're sorry to see you go</h1>
+            <p class="u-subtitle">Please read what happens before you continue.</p>
+        </header>
+
+        <div th:replace="~{user/fragments/user-ui :: flash}"></div>
+
+        <section class="u-card u-danger-zone" aria-labelledby="delete-title">
+            <h2 id="delete-title" class="u-card-title">Delete account <span class="u-mono" th:text="${user.id}">U001</span></h2>
+            <p class="u-card-sub">This cannot be undone.</p>
+            <ul class="mb-4">
+                <li>Your name, email, phone number, address and password are erased.</li>
+                <li>You are signed out and can no longer sign in to this account.</li>
+                <li>Your customer ID is kept so the bakery's existing order records stay accurate. It is never reused.</li>
+                <li>You can register again later with the same email address.</li>
+            </ul>
+
+            <form th:action="@{/profile/delete}" method="post" novalidate
+                  data-confirm-title="Delete your account?"
+                  data-confirm="Your personal details will be erased and you will be signed out. This cannot be undone."
+                  data-confirm-action="Delete my account">
+                <div class="u-field">
+                    <label for="password" class="form-label">Confirm with your password <span class="u-req" aria-hidden="true">*</span></label>
+                    <div class="u-password">
+                        <input type="password" id="password" name="password" class="form-control" required
+                               autocomplete="current-password"
+                               th:classappend="${passwordError} ? 'is-invalid'"
+                               th:attr="aria-invalid=${passwordError} ? 'true' : null, aria-describedby=${passwordError} ? 'password-error' : null">
+                        <button type="button" class="u-password-toggle" data-toggle-password="password"
+                                aria-label="Show password" aria-pressed="false" hidden>
+                            <svg class="u-icon" aria-hidden="true"><use href="#u-eye"/></svg>
+                        </button>
+                    </div>
+                    <div th:if="${passwordError}" id="password-error" class="u-error" th:text="${passwordError}">Password is incorrect.</div>
+                </div>
+                <div class="u-form-actions">
+                    <button type="submit" class="btn btn-u-danger">
+                        <svg class="u-icon" aria-hidden="true"><use href="#u-trash"/></svg>Delete my account
+                    </button>
+                    <a th:href="@{/profile}" class="btn btn-u-ghost">Keep my account</a>
+                </div>
+            </form>
+        </section>
+    </div>
+</main>
+<dialog th:replace="~{user/fragments/user-ui :: confirm-dialog}"></dialog>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{user/fragments/user-ui :: scripts}"></th:block>
+</body>
+</html>

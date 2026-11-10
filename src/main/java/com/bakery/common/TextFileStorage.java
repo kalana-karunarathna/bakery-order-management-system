@@ -2,8 +2,11 @@ package com.bakery.common;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +34,47 @@ public class TextFileStorage {
         Path file = resolve(fileName);
         Files.createDirectories(dataDirectory);
         Files.write(file, lines, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Replaces a complete file without leaving it half-written: the lines go to a temporary file
+     * in the same directory, which is then moved over the target. Added for User Management;
+     * {@link #writeLines} is unchanged for other modules.
+     */
+    public void writeLinesAtomically(String fileName, List<String> lines) throws IOException {
+        Path file = resolve(fileName);
+        Files.createDirectories(dataDirectory);
+        Path temporary = Files.createTempFile(dataDirectory, fileName + ".", ".tmp");
+        try {
+            Files.write(temporary, lines, StandardCharsets.UTF_8);
+            moveIntoPlace(temporary, file);
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
+    }
+
+    /** Atomic replace where supported; retries briefly because Windows/OneDrive can hold short locks. */
+    private static void moveIntoPlace(Path source, Path target) throws IOException {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                try {
+                    Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                } catch (AtomicMoveNotSupportedException e) {
+                    Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+                }
+                return;
+            } catch (AccessDeniedException e) {
+                if (attempt >= 5) {
+                    throw e;
+                }
+                try {
+                    Thread.sleep(40L * attempt);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+        }
     }
 
     private Path resolve(String fileName) {

@@ -30,6 +30,19 @@ class TextFileStorageTests {
     }
 
     @Test
+    void atomicWriteReplacesContentsAndLeavesNoTemporaryFiles() throws IOException {
+        Path dataDirectory = temporaryDirectory.resolve("atomic");
+        TextFileStorage storage = new TextFileStorage(dataDirectory.toString());
+        storage.writeLinesAtomically("users.txt", List.of("U001|first"));
+        storage.writeLinesAtomically("users.txt", List.of("U001|second", "U002|Café"));
+        assertEquals(List.of("U001|second", "U002|Café"), storage.readLines("users.txt"));
+        try (var files = Files.list(dataDirectory)) {
+            assertEquals(List.of("users.txt"), files.map(p -> p.getFileName().toString()).toList());
+        }
+        assertThrows(IllegalArgumentException.class, () -> storage.writeLinesAtomically("../users.txt", List.of()));
+    }
+
+    @Test
     void missingFileIsReportedWithoutCreatingIt() {
         TextFileStorage storage = new TextFileStorage(temporaryDirectory.toString());
         assertThrows(NoSuchFileException.class, () -> storage.readLines("missing.txt"));

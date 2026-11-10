@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{user/fragments/user-ui :: head('Create an account')}"></head>
+<body class="user-ui u-auth-page">
+<svg th:replace="~{user/fragments/user-ui :: icons}"></svg>
+<!-- Minimal header: no module navigation on authentication pages. -->
+<header th:replace="~{user/fragments/user-ui :: auth-header}"></header>
+<main id="main-content" class="container u-auth-main">
+
+    <div class="u-auth">
+        <aside class="u-auth-aside">
+            <div>
+                <span class="u-auth-mark" aria-hidden="true"><svg class="u-icon"><use href="#u-wheat"/></svg></span>
+                <p class="u-auth-heading">Join the bakery.</p>
+                <p>Create a free customer account to keep your details ready for every order.</p>
+            </div>
+            <ul class="u-auth-points">
+                <li><svg class="u-icon" aria-hidden="true"><use href="#u-bag"/></svg>Your delivery address saved for ordering</li>
+                <li><svg class="u-icon" aria-hidden="true"><use href="#u-star"/></svg>Eligible for the loyalty programme</li>
+                <li><svg class="u-icon" aria-hidden="true"><use href="#u-shield"/></svg>Edit or delete your account at any time</li>
+            </ul>
+        </aside>
+
+        <section class="u-auth-body" aria-labelledby="register-title">
+            <p class="u-eyebrow">New customer</p>
+            <h1 id="register-title" class="u-title">Create your account</h1>
+            <p class="u-subtitle u-auth-lead">It only takes a minute. All fields are required.</p>
+
+            <div th:if="${#fields.hasErrors('form.*')}" class="u-alert u-alert--error" role="alert">
+                <svg class="u-icon" aria-hidden="true"><use href="#u-alert"/></svg>
+                <span>Please correct the highlighted fields.</span>
+            </div>
+
+            <!-- Only these fields are bound (AuthController#allowOnlyRegistrationFields): no role, status or type. -->
+            <form th:action="@{/register}" th:object="${form}" method="post" novalidate class="u-auth-form">
+                <fieldset class="u-fieldset">
+                    <legend class="u-legend">Your details</legend>
+                    <div th:replace="~{user/fragments/user-ui :: textField('fullName', 'Full name', 'text', 'name', null, true)}"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div th:replace="~{user/fragments/user-ui :: textField('email', 'Email address', 'email', 'email', 'You will sign in with this.', true)}"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div th:replace="~{user/fragments/user-ui :: textField('phone', 'Phone number', 'tel', 'tel', 'For example +94 77 123 4567', true)}"></div>
+                        </div>
+                    </div>
+                    <div th:replace="~{user/fragments/user-ui :: textField('address', 'Address', 'text', 'street-address', 'Used for deliveries', true)}"></div>
+                </fieldset>
+                <fieldset class="u-fieldset">
+                    <legend class="u-legend">Choose a password</legend>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div th:replace="~{user/fragments/user-ui :: passwordField('password', 'Password', 'new-password', true)}"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div th:replace="~{user/fragments/user-ui :: passwordField('confirmPassword', 'Confirm password', 'new-password', false)}"></div>
+                        </div>
+                    </div>
+                </fieldset>
+                <button type="submit" class="btn btn-u-primary btn-lg w-100">Create account</button>
+            </form>
+
+            <p class="u-auth-switch">Already have an account? <a th:href="@{/login}">Sign in</a></p>
+        </section>
+    </div>
+
+</main>
+<footer th:replace="~{user/fragments/user-ui :: auth-footer}"></footer>
+<th:block th:replace="~{user/fragments/user-ui :: scripts}"></th:block>
+</body>
+</html>

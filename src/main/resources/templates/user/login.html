@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{user/fragments/user-ui :: head('Sign in')}"></head>
+<body class="user-ui u-auth-page">
+<svg th:replace="~{user/fragments/user-ui :: icons}"></svg>
+<!-- Minimal header: no module navigation on authentication pages. -->
+<header th:replace="~{user/fragments/user-ui :: auth-header}"></header>
+<main id="main-content" class="container u-auth-main">
+
+    <div class="u-auth u-auth--narrow">
+        <aside class="u-auth-aside">
+            <div>
+                <span class="u-auth-mark" aria-hidden="true"><svg class="u-icon"><use href="#u-wheat"/></svg></span>
+                <p class="u-auth-heading">Welcome back to the bakery.</p>
+                <p>Sign in to see your account, keep your details up to date and enjoy your loyalty benefits.</p>
+            </div>
+            <ul class="u-auth-points">
+                <li><svg class="u-icon" aria-hidden="true"><use href="#u-user"/></svg>Your profile in one place</li>
+                <li><svg class="u-icon" aria-hidden="true"><use href="#u-star"/></svg>Loyalty discounts when you're upgraded</li>
+                <li><svg class="u-icon" aria-hidden="true"><use href="#u-lock"/></svg>Passwords stored only as secure hashes</li>
+            </ul>
+        </aside>
+
+        <section class="u-auth-body" aria-labelledby="login-title">
+            <p class="u-eyebrow">Welcome back</p>
+            <h1 id="login-title" class="u-title">Sign in</h1>
+            <p class="u-subtitle u-auth-lead">Use the email and password for your account.</p>
+
+            <div th:replace="~{user/fragments/user-ui :: flash}"></div>
+            <!-- Same message for unknown email and wrong password, so it doesn't reveal which emails exist. -->
+            <div th:if="${param.error}" id="login-error" class="u-alert u-alert--error" role="alert">
+                <svg class="u-icon" aria-hidden="true"><use href="#u-alert"/></svg>
+                <span>That email and password combination didn't work. Please check both and try again.</span>
+            </div>
+            <div th:if="${param.disabled}" id="login-error" class="u-alert u-alert--warn" role="alert">
+                <svg class="u-icon" aria-hidden="true"><use href="#u-lock"/></svg>
+                <span>This account isn't active. Please contact the bakery for help.</span>
+            </div>
+            <div th:if="${param.logout}" class="u-alert u-alert--success" role="status">
+                <svg class="u-icon" aria-hidden="true"><use href="#u-check-circle"/></svg>
+                <span>You have been signed out.</span>
+            </div>
+            <div th:if="${param.registered != null and successMessage == null}" class="u-alert u-alert--success" role="status">
+                <svg class="u-icon" aria-hidden="true"><use href="#u-check-circle"/></svg>
+                <span>Your account is ready. Please sign in.</span>
+            </div>
+            <div th:if="${param.deleted != null and successMessage == null}" class="u-alert u-alert--info" role="status">
+                <svg class="u-icon" aria-hidden="true"><use href="#u-info"/></svg>
+                <span>Your account has been deleted.</span>
+            </div>
+
+            <!-- Processed by Spring Security (POST /login) for both customers and admins. CSRF token added by th:action. -->
+            <form th:action="@{/login}" method="post" novalidate class="u-auth-form"
+                  th:with="loginFailed=${param.error != null}, accountDisabled=${param.disabled != null}">
+                <div class="u-field">
+                    <label for="email" class="form-label">Email address</label>
+                    <input type="email" class="form-control" id="email" name="email" th:value="${lastEmail}"
+                           autocomplete="username" required autofocus placeholder="name@example.com"
+                           th:classappend="${param.error} ? 'is-invalid'"
+                           th:attr="aria-invalid=${loginFailed} ? 'true' : null,
+                                    aria-describedby=${loginFailed or accountDisabled} ? 'login-error' : null">
+                </div>
+                <div class="u-field">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="u-password">
+                        <input type="password" class="form-control" id="password" name="password"
+                               autocomplete="current-password" required
+                               th:classappend="${param.error} ? 'is-invalid'"
+                               th:attr="aria-invalid=${loginFailed} ? 'true' : null,
+                                        aria-describedby=${loginFailed} ? 'login-error' : null">
+                        <button type="button" class="u-password-toggle" data-toggle-password="password"
+                                aria-label="Show password" aria-pressed="false" hidden>
+                            <svg class="u-icon" aria-hidden="true"><use href="#u-eye"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-u-primary btn-lg w-100">Sign In</button>
+            </form>
+
+            <div class="u-auth-divider"><span>New here?</span></div>
+            <a th:href="@{/register}" class="btn btn-u-outline btn-lg w-100">Create a customer account</a>
+            <p class="u-auth-note">Bakery staff sign in with the same form.</p>
+        </section>
+    </div>
+
+</main>
+<footer th:replace="~{user/fragments/user-ui :: auth-footer}"></footer>
+<th:block th:replace="~{user/fragments/user-ui :: scripts}"></th:block>
+</body>
+</html>

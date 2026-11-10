@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{order/fragments/order-ui :: head('Edit Order')}"></head>
+<body class="order-ui sf-body">
+<svg th:replace="~{order/fragments/order-ui :: icons}"></svg>
+<header th:replace="~{fragments/storefront :: header('orders')}"></header>
+<main id="main-content" class="container o-main"
+      th:with="isDelivery=${order.orderType.name() == 'DELIVERY'}">
+
+    <nav class="o-back" aria-label="Breadcrumb">
+        <a th:href="@{/orders/{id}(id=${order.id})}">
+            <svg class="o-icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>Order <span th:text="${order.id}">O001</span>
+        </a>
+    </nav>
+
+    <header class="o-page-head">
+        <p class="o-eyebrow">Edit order</p>
+        <h1 class="o-title">Edit order <span class="o-ref" th:text="${order.id}">O001</span></h1>
+        <p class="o-subtitle">Update the quantity<th:block th:if="${isDelivery}"> or delivery address</th:block> for this order.</p>
+    </header>
+
+    <div th:replace="~{order/fragments/order-ui :: flash}"></div>
+
+    <div class="o-callout o-callout--amber mb-4">
+        <svg class="o-icon" aria-hidden="true"><use href="#i-clock"/></svg>
+        <span>Editing is only available while an order is <strong>Pending</strong>.
+              Once the bakery starts preparing it, the order can no longer be changed.</span>
+    </div>
+
+    <!-- Action URL and field names unchanged: quantity, deliveryAddress -> POST /orders/{id}/edit -->
+    <form th:action="@{/orders/{id}/edit(id=${order.id})}" method="post" novalidate id="editOrderForm"
+          data-order-form="edit"
+          th:attr="data-unit-price=${order.unitPrice},data-delivery-fee=${order.deliveryFee},data-original-quantity=${order.quantity}">
+        <div class="row g-4 align-items-start">
+
+            <div class="col-lg-7 col-xl-8">
+
+                <!-- Read-only order information -->
+                <section class="o-card" aria-labelledby="current-title">
+                    <h2 id="current-title" class="o-card-title">Order information</h2>
+                    <div class="o-line-item">
+                        <span class="o-order-thumb" aria-hidden="true"><svg class="o-icon"><use href="#i-cake"/></svg></span>
+                        <div class="o-line-item-info">
+                            <div class="o-line-item-name" th:text="${order.productName}">Chocolate Fudge Cake</div>
+                            <div class="o-line-item-meta">
+                                Product ID <span class="o-mono" th:text="${order.productId}">P001</span>
+                                <span aria-hidden="true">&middot;</span>
+                                <span th:replace="~{order/fragments/order-ui :: type(${order})}"></span>
+                            </div>
+                        </div>
+                        <span th:replace="~{order/fragments/order-ui :: status(${order})}"></span>
+                    </div>
+                    <dl class="o-facts-grid">
+                        <div><dt>Customer ID</dt><dd class="o-mono" th:text="${order.customerId}">U001</dd></div>
+                        <div><dt>Unit price</dt><dd th:text="'LKR ' + ${#numbers.formatDecimal(order.unitPrice, 1, 'COMMA', 2, 'POINT')}">LKR 1,200.00</dd></div>
+                        <div><dt>Order date</dt><dd th:text="${#temporals.format(order.orderDate, 'd MMM yyyy')}">14 Oct 2026</dd></div>
+                    </dl>
+                </section>
+
+                <!-- Editable fields -->
+                <section class="o-card o-form-section" aria-labelledby="changes-title">
+                    <h2 id="changes-title" class="o-card-title">Your changes</h2>
+
+                    <div class="o-field">
+                        <label for="quantity" class="form-label">Quantity <span class="o-req" aria-hidden="true">*</span></label>
+                        <div class="o-stepper o-stepper--narrow" data-stepper>
+                            <button type="button" class="o-stepper-btn" data-step="-1" aria-label="Decrease quantity">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-minus"/></svg>
+                            </button>
+                            <input type="number" class="form-control" id="quantity" name="quantity"
+                                   min="1" max="100" step="1" th:value="${order.quantity}" required inputmode="numeric"
+                                   aria-describedby="quantity-hint quantity-error">
+                            <button type="button" class="o-stepper-btn" data-step="1" aria-label="Increase quantity">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-plus"/></svg>
+                            </button>
+                        </div>
+                        <div id="quantity-hint" class="form-text">Currently <span th:text="${order.quantity}">2</span>.</div>
+                        <div id="quantity-error" class="o-field-error" aria-live="polite"></div>
+                    </div>
+
+                    <div class="o-field" th:if="${isDelivery}">
+                        <label for="deliveryAddress" class="form-label">Delivery address <span class="o-req" aria-hidden="true">*</span></label>
+                        <div class="o-input-icon o-input-icon--top">
+                            <svg class="o-icon" aria-hidden="true"><use href="#i-pin"/></svg>
+                            <textarea class="form-control" id="deliveryAddress" name="deliveryAddress" rows="3"
+                                      maxlength="250" required th:text="${order.deliveryAddress}"
+                                      aria-describedby="deliveryAddress-error"></textarea>
+                        </div>
+                        <div id="deliveryAddress-error" class="o-field-error" aria-live="polite"></div>
+                    </div>
+
+                    <p th:unless="${isDelivery}" class="o-muted-text mb-0">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-store"/></svg>
+                        This is a pickup order, so only the quantity can be changed.
+                    </p>
+                </section>
+            </div>
+
+            <div class="col-lg-5 col-xl-4">
+                <aside class="o-card o-summary" aria-labelledby="updated-title">
+                    <h2 id="updated-title" class="o-card-title">Updated total</h2>
+                    <dl class="o-price-list" aria-live="polite">
+                        <div><dt>Unit price</dt>
+                            <dd th:text="'LKR ' + ${#numbers.formatDecimal(order.unitPrice, 1, 'COMMA', 2, 'POINT')}">LKR 1,200.00</dd></div>
+                        <div><dt>Quantity</dt><dd data-summary="quantity" th:text="${order.quantity}">2</dd></div>
+                        <div><dt>Subtotal</dt>
+                            <dd data-summary="subtotal"
+                                th:text="'LKR ' + ${#numbers.formatDecimal(order.quantity * order.unitPrice, 1, 'COMMA', 2, 'POINT')}">LKR 2,400.00</dd></div>
+                        <div><dt>Delivery fee</dt>
+                            <dd th:text="${isDelivery} ? 'LKR ' + ${#numbers.formatDecimal(order.deliveryFee, 1, 'COMMA', 2, 'POINT')} : 'Free (pickup)'">LKR 250.00</dd></div>
+                        <div class="o-price-total"><dt>New total</dt>
+                            <dd data-summary="total"
+                                th:text="'LKR ' + ${#numbers.formatDecimal(order.calculateTotal(), 1, 'COMMA', 2, 'POINT')}">LKR 2,650.00</dd></div>
+                    </dl>
+                    <p class="o-summary-note">
+                        Previous total:
+                        <strong th:text="'LKR ' + ${#numbers.formatDecimal(order.calculateTotal(), 1, 'COMMA', 2, 'POINT')}">LKR 2,650.00</strong>
+                        <span class="o-diff" data-summary="difference"></span>
+                    </p>
+
+                    <button type="submit" class="btn btn-o-primary btn-lg w-100" data-submit-label="Saving&hellip;">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-check"/></svg>Save Changes
+                    </button>
+                    <a th:href="@{/orders/{id}(id=${order.id})}" class="btn btn-o-ghost w-100 mt-2">Back without saving</a>
+                </aside>
+            </div>
+        </div>
+    </form>
+
+</main>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+<th:block th:replace="~{order/fragments/order-ui :: scripts}"></th:block>
+</body>
+</html>

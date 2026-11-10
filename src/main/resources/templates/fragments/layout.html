@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:fragment="head(pageTitle)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,7 +10,7 @@
 <body>
 <header th:fragment="header">
     <a class="skip-link btn btn-light" href="#main-content">Skip to content</a>
-    <nav class="navbar navbar-expand-xl navbar-dark" aria-label="Main navigation">
+    <nav class="navbar navbar-expand-lg navbar-dark" aria-label="Main navigation">
         <div class="container">
             <a class="navbar-brand fw-bold" th:href="@{/}">Bakery Platform</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -18,21 +18,73 @@
                     aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="main-navigation">
-                <ul class="navbar-nav ms-auto">
+            <!--
+              Role-aware navigation (User Management). Showing or hiding links is only cosmetic:
+              every protected route is enforced by SecurityConfig and @PreAuthorize.
+              Module pages stay reachable for everyone through the footer links.
+            -->
+            <div class="collapse navbar-collapse" id="main-navigation" th:with="myOrdersUrl=${@navigation.myOrdersUrl}">
+                <!-- Visitors and customers -->
+                <ul class="navbar-nav ms-auto" sec:authorize="!hasRole('ADMIN')">
                     <li class="nav-item"><a class="nav-link" th:href="@{/}">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" th:href="@{/users}">Users</a></li>
-                    <li class="nav-item"><a class="nav-link" th:href="@{/products}">Products</a></li>
-                    <li class="nav-item"><a class="nav-link" th:href="@{/orders}">Orders</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/products}">Shop</a></li>
                     <li class="nav-item"><a class="nav-link" th:href="@{/cake-bookings}">Custom Cakes</a></li>
-                    <li class="nav-item"><a class="nav-link" th:href="@{/payments}">Payments</a></li>
-                    <li class="nav-item"><a class="nav-link" th:href="@{/feedback}">Feedback &amp; Admin</a></li>
+                    <li class="nav-item" sec:authorize="hasRole('CUSTOMER')">
+                        <a class="nav-link" th:href="@{${myOrdersUrl}}">My Orders</a></li>
+                </ul>
+                <!-- Administrators -->
+                <ul class="navbar-nav ms-auto" sec:authorize="hasRole('ADMIN')">
+                    <li class="nav-item"><a class="nav-link" th:href="@{/users/admin}">Admin dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/users/admin/customers}">Customers</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/orders/admin}">Order management</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/}">View site</a></li>
+                </ul>
+
+                <!-- Account area -->
+                <ul class="navbar-nav ms-lg-3 align-items-lg-center" sec:authorize="!isAuthenticated()">
+                    <li class="nav-item"><a class="nav-link" th:href="@{/login}">Sign in</a></li>
+                    <li class="nav-item ms-lg-1"><a class="btn btn-sm btn-light rounded-pill px-3 my-2 my-lg-0" th:href="@{/register}">Create account</a></li>
+                </ul>
+                <ul class="navbar-nav ms-lg-3" sec:authorize="isAuthenticated()">
+                    <li class="nav-item dropdown">
+                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                id="account-menu-button">
+                            <span class="visually-hidden">Account menu for </span><span sec:authentication="principal.fullName">Account</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="account-menu-button">
+                            <li><span class="dropdown-item-text small text-secondary"
+                                      sec:authentication="principal.email">email</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/users/admin}">Admin dashboard</a></li>
+                            <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/orders/admin}">Order management</a></li>
+                            <li><a class="dropdown-item" th:href="@{/profile}"
+                                   th:text="${#authorization.expression('hasRole(''ADMIN'')')} ? 'Admin profile' : 'My account'">My account</a></li>
+                            <li sec:authorize="hasRole('CUSTOMER')"><a class="dropdown-item" th:href="@{${myOrdersUrl}}">My orders</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post">
+                                    <button type="submit" class="dropdown-item">Log out</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 </header>
 <footer th:fragment="footer" class="container py-4 mt-5 border-top">
+    <!-- All six module pages stay reachable from every page, whatever the header shows. -->
+    <nav aria-label="Platform modules" class="mb-2">
+        <ul class="list-inline small mb-0">
+            <li class="list-inline-item"><a class="link-secondary" th:href="@{/users}">Accounts</a></li>
+            <li class="list-inline-item"><a class="link-secondary" th:href="@{/products}">Products</a></li>
+            <li class="list-inline-item"><a class="link-secondary" th:href="@{/orders}">Orders</a></li>
+            <li class="list-inline-item"><a class="link-secondary" th:href="@{/cake-bookings}">Custom Cakes</a></li>
+            <li class="list-inline-item"><a class="link-secondary" th:href="@{/payments}">Payments</a></li>
+            <li class="list-inline-item"><a class="link-secondary" th:href="@{/feedback}">Feedback</a></li>
+        </ul>
+    </nav>
     <p class="small text-secondary mb-0">Bakery Order and Custom Cake Booking Platform</p>
 </footer>
 <th:block th:fragment="scripts">
