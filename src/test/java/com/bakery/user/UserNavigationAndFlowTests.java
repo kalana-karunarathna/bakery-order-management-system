@@ -1,6 +1,7 @@
 package com.bakery.user;
 
 import com.bakery.user.model.User;
+import com.bakery.user.repository.FileUserRepository;
 import com.bakery.user.repository.UserRepository;
 import com.bakery.user.security.BakeryUserPrincipal;
 import com.bakery.user.service.UserService;
@@ -63,7 +64,7 @@ class UserNavigationAndFlowTests {
 
     @BeforeEach
     void resetUsers() throws IOException {
-        Files.deleteIfExists(DATA_DIR.resolve(UserRepository.FILE_NAME));
+        Files.deleteIfExists(DATA_DIR.resolve(FileUserRepository.FILE_NAME));
         alice = userService.register("Alice Perera", "alice@example.com", "077 111 1111", "1 Lake Road, Kandy", PASSWORD, PASSWORD).id();
         userService.register("Bob Silva", "bob@example.com", "077 222 2222", "2 Hill Street, Galle", PASSWORD, PASSWORD);
         admin = userService.createAdmin("Bakery Admin", "admin@example.com", ADMIN_PASSWORD).id();
@@ -248,7 +249,7 @@ class UserNavigationAndFlowTests {
         assertEquals("CUSTOMER", chris.getRole().name());
         assertEquals("REGULAR", chris.getCustomerType().name());
         assertTrue(chris.getPasswordHash().startsWith("$2a$"));
-        assertFalse(Files.readString(DATA_DIR.resolve(UserRepository.FILE_NAME)).contains(PASSWORD));
+        assertFalse(Files.readString(DATA_DIR.resolve(FileUserRepository.FILE_NAME)).contains(PASSWORD));
 
         // duplicate email is rejected
         mvc.perform(post("/register").with(csrf())

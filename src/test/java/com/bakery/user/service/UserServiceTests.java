@@ -6,6 +6,7 @@ import com.bakery.user.model.CustomerType;
 import com.bakery.user.model.LoyaltyCustomer;
 import com.bakery.user.model.User;
 import com.bakery.user.model.UserRole;
+import com.bakery.user.repository.FileUserRepository;
 import com.bakery.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class UserServiceTests {
 
     @BeforeEach
     void setUp() {
-        repository = new UserRepository(new TextFileStorage(dir.toString()));
+        repository = new FileUserRepository(new TextFileStorage(dir.toString()));
         service = new UserService(repository, encoder);
     }
 

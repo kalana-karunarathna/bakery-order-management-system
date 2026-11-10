@@ -2,6 +2,7 @@ package com.bakery.user;
 
 import com.bakery.user.model.AccountStatus;
 import com.bakery.user.model.User;
+import com.bakery.user.repository.FileUserRepository;
 import com.bakery.user.repository.UserRepository;
 import com.bakery.user.security.BakeryUserPrincipal;
 import com.bakery.user.service.UserService;
@@ -66,7 +67,7 @@ class UserWebSecurityTests {
     @BeforeEach
     void resetUsers() throws IOException {
         assertEquals(DATA_DIR.toString(), configuredDir, "tests must not use the real data folder");
-        Files.deleteIfExists(DATA_DIR.resolve(UserRepository.FILE_NAME));
+        Files.deleteIfExists(DATA_DIR.resolve(FileUserRepository.FILE_NAME));
         alice = userService.register("Alice Perera", "alice@example.com", "077 111 1111", "1 Lake Road, Kandy", PASSWORD, PASSWORD).id();
         bob = userService.register("Bob Silva", "bob@example.com", "077 222 2222", "2 Hill Street, Galle", PASSWORD, PASSWORD).id();
         admin = userService.createAdmin("Bakery Admin", "admin@example.com", "Admin2026x").id();
