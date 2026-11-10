@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{user/fragments/user-ui :: head('Access denied')}"></head>
+<body class="user-ui">
+<svg th:replace="~{user/fragments/user-ui :: icons}"></svg>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container u-main">
+    <section class="u-denied" aria-labelledby="denied-title">
+        <div class="u-denied-code" aria-hidden="true">403</div>
+        <h1 id="denied-title" class="u-title mt-3">You don't have access to this page</h1>
+        <p class="u-subtitle">
+            This area is restricted. If you followed a link or your session expired while a form was open,
+            go back and try again.
+        </p>
+        <div class="u-form-actions justify-content-center">
+            <a th:href="@{/}" class="btn btn-u-primary">Go to the home page</a>
+            <a sec:authorize="isAuthenticated()" th:href="@{/profile}" class="btn btn-u-outline">My account</a>
+            <a sec:authorize="!isAuthenticated()" th:href="@{/login}" class="btn btn-u-outline">Sign in</a>
+        </div>
+    </section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{user/fragments/user-ui :: scripts}"></th:block>
+</body>
+</html>

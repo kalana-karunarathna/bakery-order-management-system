@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/admin :: head('Dashboard', '/css/users.css')}"></head>
+<body class="admin-ui user-ui">
+<svg th:replace="~{user/fragments/user-ui :: icons}"></svg>
+<header th:replace="~{fragments/admin :: topbar}"></header>
+<div class="a-shell">
+<nav th:replace="~{fragments/admin :: sidebar('dashboard')}"></nav>
+<main id="main-content" class="a-content">
+
+    <header class="u-page-head">
+        <div>
+            <p class="u-eyebrow mb-1">Admin dashboard</p>
+            <h1 class="u-title">Welcome, <span sec:authentication="principal.fullName">Admin</span></h1>
+            <p class="u-subtitle">An overview of customer accounts. More modules will report here as they are integrated.</p>
+        </div>
+        <a th:href="@{/users/admin/customers}" class="btn btn-u-primary">
+            <svg class="u-icon" aria-hidden="true"><use href="#u-users"/></svg>Manage customers
+        </a>
+    </header>
+
+    <div th:replace="~{user/fragments/user-ui :: flash}"></div>
+
+    <!-- Live counts from users.txt (deleted accounts are counted separately). -->
+    <section class="u-stats" aria-label="Customer statistics">
+        <a th:href="@{/users/admin/customers}" class="u-stat u-stat--total">
+            <span class="u-stat-label">Total customers</span>
+            <span class="u-stat-value" th:text="${stats.total}">0</span>
+        </a>
+        <a th:href="@{/users/admin/customers(status='ACTIVE')}" class="u-stat">
+            <span class="u-stat-label"><span class="u-dot" style="background:#43A05A" aria-hidden="true"></span>Active</span>
+            <span class="u-stat-value" th:text="${stats.active}">0</span>
+        </a>
+        <a th:href="@{/users/admin/customers(status='INACTIVE')}" class="u-stat">
+            <span class="u-stat-label"><span class="u-dot" style="background:#E09B2D" aria-hidden="true"></span>Inactive</span>
+            <span class="u-stat-value" th:text="${stats.inactive}">0</span>
+        </a>
+        <div class="u-stat">
+            <span class="u-stat-label"><span class="u-dot" style="background:#C77D45" aria-hidden="true"></span>Loyalty members</span>
+            <span class="u-stat-value" th:text="${stats.loyalty}">0</span>
+        </div>
+    </section>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-xxl-8">
+            <section class="u-card u-table-card" aria-labelledby="recent-title">
+                <div class="u-toolbar justify-content-between">
+                    <h2 id="recent-title" class="u-card-title mb-0">Newest customers</h2>
+                    <a th:href="@{/users/admin/customers}" class="btn btn-u-ghost btn-sm">View all</a>
+                </div>
+                <table th:if="${!recentCustomers.isEmpty()}" class="u-table">
+                    <caption class="visually-hidden">Five most recently registered customers</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Joined</th>
+                        <th scope="col" class="text-end"><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="c : ${recentCustomers}">
+                        <td data-label="Customer">
+                            <div class="u-person">
+                                <span class="u-avatar u-avatar--sm" aria-hidden="true" th:text="${c.initials()}">SC</span>
+                                <div>
+                                    <div class="u-person-name" th:text="${c.fullName}">Sample Customer</div>
+                                    <div class="u-person-email" th:text="${c.email}">customer@example.com</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Type"><span th:replace="~{user/fragments/user-ui :: type(${c})}"></span></td>
+                        <td data-label="Status"><span th:replace="~{user/fragments/user-ui :: status(${c})}"></span></td>
+                        <td data-label="Joined" th:text="${#temporals.format(c.createdDate, 'd MMM yyyy')}">10 Nov 2026</td>
+                        <td data-label="Actions" class="text-end">
+                            <a th:href="@{/users/admin/{id}(id=${c.id})}" class="btn btn-u-outline btn-sm"
+                               th:attr="aria-label='Manage customer ' + ${c.id}">Manage</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div th:if="${recentCustomers.isEmpty()}" class="u-empty">
+                    <span class="u-perk-icon" aria-hidden="true"><svg class="u-icon"><use href="#u-users"/></svg></span>
+                    <strong>No customers yet</strong>
+                    <p class="mb-0">New registrations will appear here.</p>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xxl-4">
+            <section class="u-card" aria-labelledby="modules-title">
+                <h2 id="modules-title" class="u-card-title">Platform modules</h2>
+                <p class="u-card-sub">Customer management is available now. Other modules will add their admin tools here.</p>
+                <ul class="u-module-list">
+                    <li><span class="u-module-name">Customers</span><span class="u-badge u-badge--active">Available</span></li>
+                    <li><a th:href="@{/products}">Products</a><span class="u-badge u-badge--neutral">Module page</span></li>
+                    <li><a th:href="@{/orders}">Orders</a><span class="u-badge u-badge--neutral">Module page</span></li>
+                    <li><a th:href="@{/cake-bookings}">Custom cake bookings</a><span class="u-badge u-badge--neutral">Module page</span></li>
+                    <li><a th:href="@{/payments}">Payments</a><span class="u-badge u-badge--neutral">Module page</span></li>
+                    <li><a th:href="@{/feedback}">Feedback</a><span class="u-badge u-badge--neutral">Module page</span></li>
+                </ul>
+            </section>
+            <section class="u-card" aria-labelledby="security-title">
+                <h2 id="security-title" class="u-card-title">Access</h2>
+                <p class="u-card-sub mb-0">
+                    Customer management is restricted to administrators on the server. Other modules' pages are still
+                    public until each module adds its own access rules.
+                </p>
+            </section>
+        </div>
+    </div>
+
+</main>
+</div>
+<th:block th:replace="~{user/fragments/user-ui :: scripts}"></th:block>
+</body>
+</html>

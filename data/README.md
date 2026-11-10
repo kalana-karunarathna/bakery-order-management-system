@@ -6,7 +6,7 @@ Nothing reads or rewrites them during application startup.
 
 | File | Initial columns |
 | --- | --- |
-| users.txt | `id\|name\|email\|role` |
+| users.txt | `id\|name\|email\|role` (scaffold sample). User Management now writes `id\|role\|customerType\|fullName\|email\|phone\|address\|passwordHash\|status\|createdDate` and migrates the old format with a backup; see `docs/USER_MANAGEMENT.md` |
 | products.txt | `id\|name\|category\|price\|available` |
 | orders.txt | `id\|userId\|productId\|quantity\|status` |
 | cake-bookings.txt | `id\|userId\|flavour\|size\|message\|pickupDate\|status` |

@@ -1,20 +1,67 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('User Management')}"></head>
-<body>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{user/fragments/user-ui :: head('User Management')}"></head>
+<body class="user-ui">
+<svg th:replace="~{user/fragments/user-ui :: icons}"></svg>
 <header th:replace="~{fragments/layout :: header}"></header>
-<main id="main-content" class="container py-5">
-    <a class="link-secondary" th:href="@{/}">Back to home</a>
-    <h1 class="display-6 fw-bold mt-4">User Management</h1>
-    <p class="lead">Manage customer accounts and user profiles.</p>
-    <div class="card module-card mt-4">
-        <div class="card-body p-4">
-            <h2 class="h5">Coming soon</h2>
-            <p class="mb-0">This section is being prepared. Please check back for updates.</p>
+<main id="main-content" class="container u-main">
+
+    <a class="u-back" th:href="@{/}"><svg class="u-icon" aria-hidden="true"><use href="#u-arrow-left"/></svg>Home</a>
+
+    <section class="u-hub" aria-labelledby="users-title">
+        <div>
+            <p class="u-eyebrow">User Management</p>
+            <h1 id="users-title" class="u-title">Your bakery account</h1>
+
+            <th:block sec:authorize="!isAuthenticated()">
+                <p class="u-subtitle">Create a free customer account or sign in to manage your details.</p>
+                <div class="u-hub-actions">
+                    <a th:href="@{/register}" class="btn btn-u-primary btn-lg">Create an account</a>
+                    <a th:href="@{/login}" class="btn btn-u-outline btn-lg">Sign in</a>
+                </div>
+            </th:block>
+
+            <th:block sec:authorize="isAuthenticated()">
+                <p class="u-subtitle">
+                    Signed in as <strong sec:authentication="principal.fullName">Customer</strong>.
+                </p>
+                <div class="u-hub-actions">
+                    <a th:href="@{/profile}" class="btn btn-u-primary btn-lg">Go to my account</a>
+                    <a sec:authorize="hasRole('ADMIN')" th:href="@{/users/admin}" class="btn btn-u-outline btn-lg">
+                        <svg class="u-icon" aria-hidden="true"><use href="#u-users"/></svg>Manage customers
+                    </a>
+                </div>
+            </th:block>
+        </div>
+        <div class="u-perk">
+            <span class="u-perk-icon" aria-hidden="true"><svg class="u-icon"><use href="#u-star"/></svg></span>
+            <div>
+                <strong>Loyalty programme</strong>
+                <p>Loyal customers can be upgraded by the bakery to receive a discount on future orders.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="u-feature-grid">
+        <div class="u-feature">
+            <span class="u-perk-icon" aria-hidden="true"><svg class="u-icon"><use href="#u-user"/></svg></span>
+            <strong>Your details in one place</strong>
+            <p>Keep your name, phone number and delivery address up to date.</p>
+        </div>
+        <div class="u-feature">
+            <span class="u-perk-icon" aria-hidden="true"><svg class="u-icon"><use href="#u-lock"/></svg></span>
+            <strong>Secure sign-in</strong>
+            <p>Passwords are stored only as secure hashes and can be changed at any time.</p>
+        </div>
+        <div class="u-feature">
+            <span class="u-perk-icon" aria-hidden="true"><svg class="u-icon"><use href="#u-shield"/></svg></span>
+            <strong>You're in control</strong>
+            <p>Delete your account whenever you like; your personal details are erased.</p>
         </div>
     </div>
+
 </main>
 <footer th:replace="~{fragments/layout :: footer}"></footer>
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<th:block th:replace="~{user/fragments/user-ui :: scripts}"></th:block>
 </body>
 </html>
