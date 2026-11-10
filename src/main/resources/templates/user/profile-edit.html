@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{user/fragments/user-ui :: head('Edit details')}"></head>
+<body class="user-ui">
+<svg th:replace="~{user/fragments/user-ui :: icons}"></svg>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container u-main">
+    <div class="u-narrow">
+        <a th:href="@{/profile}" class="u-back"><svg class="u-icon" aria-hidden="true"><use href="#u-arrow-left"/></svg>My account</a>
+        <header class="mb-4">
+            <p class="u-eyebrow">My account</p>
+            <h1 class="u-title">Edit your details</h1>
+            <p class="u-subtitle">Your customer ID and customer type can't be changed here.</p>
+        </header>
+
+        <section class="u-card" aria-labelledby="edit-title">
+            <div class="u-card-head">
+                <div>
+                    <h2 id="edit-title" class="u-card-title">Personal details</h2>
+                    <p class="u-card-sub">Fields marked <span class="u-req">*</span> are required.</p>
+                </div>
+                <span class="u-badge u-badge--neutral u-mono" th:text="${user.id}">U001</span>
+            </div>
+
+            <div th:if="${#fields.hasErrors('form.*')}" class="u-alert u-alert--error" role="alert">
+                <svg class="u-icon" aria-hidden="true"><use href="#u-alert"/></svg><span>Please correct the highlighted fields.</span>
+            </div>
+
+            <!-- Only name, email, phone and address are bound (ProfileController#allowProfileFields). -->
+            <form th:action="@{/profile/edit}" th:object="${form}" method="post" novalidate>
+                <div th:replace="~{user/fragments/user-ui :: textField('fullName', 'Full name', 'text', 'name', null, true)}"></div>
+                <div th:replace="~{user/fragments/user-ui :: textField('email', 'Email address', 'email', 'email', 'You will use this to sign in.', true)}"></div>
+                <div th:replace="~{user/fragments/user-ui :: textField('phone', 'Phone number', 'tel', 'tel', null, ${!user.admin})}"></div>
+                <div th:replace="~{user/fragments/user-ui :: textField('address', 'Address', 'text', 'street-address', 'Used for deliveries', ${!user.admin})}"></div>
+                <div class="u-form-actions">
+                    <button type="submit" class="btn btn-u-primary">
+                        <svg class="u-icon" aria-hidden="true"><use href="#u-check"/></svg>Save changes
+                    </button>
+                    <a th:href="@{/profile}" class="btn btn-u-ghost">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{user/fragments/user-ui :: scripts}"></th:block>
+</body>
+</html>

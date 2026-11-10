@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!-- User Management (Component 01) page fragments. The shared fragments/layout.html header/footer are reused. -->
+
+<!-- Same as fragments/layout :: head, plus the user-only stylesheet. -->
+<head th:fragment="head(pageTitle)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${pageTitle} + ' | Bakery Platform'">Bakery Platform</title>
+    <link rel="stylesheet" th:href="@{/vendor/bootstrap/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/users.css}">
+</head>
+<body>
+
+<svg th:fragment="icons" xmlns="http://www.w3.org/2000/svg" class="u-sprite" aria-hidden="true" focusable="false">
+    <symbol id="u-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+    <symbol id="u-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1.2-3.5 3.7-5.2 6.5-5.2s5.3 1.7 6.5 5.2"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.9c1.7.7 3 2.4 3.5 5.1"/></symbol>
+    <symbol id="u-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5 12 13l8.5-6.5"/></symbol>
+    <symbol id="u-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="u-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="M13.5 6.5l4 4"/></symbol>
+    <symbol id="u-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+    <symbol id="u-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+    <symbol id="u-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
+    <symbol id="u-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2L12 3Z"/><path d="M12 10v5M12 18h.01"/></symbol>
+    <symbol id="u-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
+    <symbol id="u-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="u-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z"/></symbol>
+    <symbol id="u-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="u-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+    <symbol id="u-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="u-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+    <symbol id="u-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="u-wheat" viewBox="0 0 24 24"><path d="M12 21V8"/><path d="M12 10c-2.5-.3-4-2-4.2-4.4 2.4.2 4 1.9 4.2 4.4Zm0 0c2.5-.3 4-2 4.2-4.4-2.4.2-4 1.9-4.2 4.4Z"/><path d="M12 15c-2.5-.3-4-2-4.2-4.4 2.4.2 4 1.9 4.2 4.4Zm0 0c2.5-.3 4-2 4.2-4.4-2.4.2-4 1.9-4.2 4.4Z"/></symbol>
+    <symbol id="u-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9L5 8Z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></symbol>
+    <symbol id="u-power" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></symbol>
+</svg>
+
+<!--
+  Minimal header for sign-in / registration pages: brand on the left, "Back to shop" on the right.
+  Used instead of fragments/layout :: header so the auth pages don't show the module navigation.
+-->
+<header th:fragment="auth-header" class="u-auth-header">
+    <a class="skip-link btn btn-light" href="#main-content">Skip to content</a>
+    <div class="container u-auth-header-inner">
+        <a class="u-brand" th:href="@{/}">
+            <span class="u-brand-mark" aria-hidden="true"><svg class="u-icon"><use href="#u-wheat"/></svg></span>
+            <span class="u-brand-text">
+                <span class="u-brand-name">Bakery Platform</span>
+                <span class="u-brand-sub">Order &amp; custom cakes</span>
+            </span>
+        </a>
+        <a class="u-auth-back" th:href="@{/}">
+            <svg class="u-icon" aria-hidden="true"><use href="#u-arrow-left"/></svg>Back to shop
+        </a>
+    </div>
+</header>
+
+<footer th:fragment="auth-footer" class="u-auth-footer">
+    <div class="container">
+        <p class="mb-0">Bakery Order and Custom Cake Booking Platform &middot; Your password is stored only as a secure hash.</p>
+    </div>
+</footer>
+
+<!-- Flash messages set by controllers (successMessage / errorMessage). -->
+<div th:fragment="flash">
+    <div th:if="${successMessage}" class="u-alert u-alert--success" role="status">
+        <svg class="u-icon" aria-hidden="true"><use href="#u-check-circle"/></svg><span th:text="${successMessage}">Saved.</span>
+    </div>
+    <div th:if="${errorMessage}" class="u-alert u-alert--error" role="alert">
+        <svg class="u-icon" aria-hidden="true"><use href="#u-alert"/></svg><span th:text="${errorMessage}">Error.</span>
+    </div>
+</div>
+
+<!--
+  Text input bound to the surrounding th:object. Errors come from the BindingResult.
+  name: form property; type: input type; autocomplete: autocomplete token; hint: help text or null.
+-->
+<div th:fragment="textField(name, label, type, autocomplete, hint, required)" class="u-field"
+     th:with="hasError=${#fields.hasErrors('__${name}__')}">
+    <label th:for="${name}" class="form-label">
+        <th:block th:text="${label}">Label</th:block>
+        <span th:if="${required}" class="u-req" aria-hidden="true">*</span>
+    </label>
+    <input th:type="${type}" class="form-control" th:field="*{__${name}__}"
+           th:classappend="${hasError} ? 'is-invalid'"
+           th:attr="autocomplete=${autocomplete},
+                    aria-invalid=${hasError} ? 'true' : null,
+                    aria-describedby=${(hint != null ? name + '-hint ' : '') + (hasError == true ? name + '-error' : '')},
+                    required=${required} ? 'required' : null">
+    <div th:if="${hint != null}" th:id="${name} + '-hint'" class="form-text" th:text="${hint}">Hint</div>
+    <div th:if="${hasError}" th:id="${name} + '-error'" class="u-error" th:errors="*{__${name}__}">Error</div>
+</div>
+
+<!-- Password input with a show/hide button. The value is never written back into the page. -->
+<div th:fragment="passwordField(name, label, autocomplete, meter)" class="u-field"
+     th:with="hasError=${#fields.hasErrors('__${name}__')}">
+    <label th:for="${name}" class="form-label"><th:block th:text="${label}">Password</th:block>
+        <span class="u-req" aria-hidden="true">*</span></label>
+    <div class="u-password">
+        <input type="password" class="form-control" th:id="${name}" th:name="${name}" value=""
+               th:classappend="${hasError} ? 'is-invalid'" required
+               th:attr="autocomplete=${autocomplete},
+                        aria-invalid=${hasError} ? 'true' : null,
+                        aria-describedby=${(meter == true ? name + '-rules ' : '') + (hasError == true ? name + '-error' : '')}">
+        <button type="button" class="u-password-toggle" th:attr="data-toggle-password=${name}"
+                aria-label="Show password" aria-pressed="false" hidden>
+            <svg class="u-icon" aria-hidden="true"><use href="#u-eye"/></svg>
+        </button>
+    </div>
+    <th:block th:if="${meter == true}">
+        <div class="u-strength" th:attr="data-password-meter=${name}" data-level="0" aria-hidden="true"><span></span><span></span><span></span></div>
+        <ul class="u-rules" th:id="${name} + '-rules'">
+            <li data-rule="length" th:attr="data-rule-for=${name}">8 to 64 characters</li>
+            <li data-rule="letter" th:attr="data-rule-for=${name}">A letter</li>
+            <li data-rule="number" th:attr="data-rule-for=${name}">A number</li>
+        </ul>
+    </th:block>
+    <div th:if="${hasError}" th:id="${name} + '-error'" class="u-error" th:errors="*{__${name}__}">Error</div>
+</div>
+
+<!-- Status and customer-type badges for a UserView. -->
+<span th:fragment="status(u)" class="u-badge"
+      th:classappend="'u-badge--' + ${#strings.toLowerCase(u.status.name())}">
+    <span class="u-badge-dot" aria-hidden="true"></span><th:block th:text="${u.status.label}">Active</th:block>
+</span>
+<span th:fragment="type(u)" class="u-badge"
+      th:classappend="${u.admin} ? 'u-badge--admin' : (${u.customerType.name() == 'LOYALTY'} ? 'u-badge--loyalty' : 'u-badge--regular')">
+    <svg th:if="${u.customerType.name() == 'LOYALTY'}" class="u-icon" aria-hidden="true"><use href="#u-star"/></svg>
+    <th:block th:text="${u.admin} ? 'Administrator' : ${u.customerType.label}">Regular customer</th:block>
+</span>
+
+<dialog th:fragment="confirm-dialog" id="userConfirmDialog" class="u-dialog"
+        aria-labelledby="userConfirmTitle" aria-describedby="userConfirmMessage">
+    <div class="u-dialog-body">
+        <span class="u-dialog-icon" aria-hidden="true"><svg class="u-icon"><use href="#u-alert"/></svg></span>
+        <h2 id="userConfirmTitle">Are you sure?</h2>
+        <p id="userConfirmMessage">This cannot be undone.</p>
+    </div>
+    <div class="u-dialog-actions">
+        <button type="button" class="btn btn-u-outline" data-dialog-cancel>Cancel</button>
+        <button type="button" class="btn btn-u-danger" data-dialog-confirm>Confirm</button>
+    </div>
+</dialog>
+
+<th:block th:fragment="scripts">
+    <script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}" defer></script>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/users.js}" defer></script>
+</th:block>
+
+</body>
+</html>

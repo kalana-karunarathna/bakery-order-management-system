@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin :: head('Manage customer', '/css/users.css')}"></head>
+<body class="admin-ui user-ui">
+<svg th:replace="~{user/fragments/user-ui :: icons}"></svg>
+<header th:replace="~{fragments/admin :: topbar}"></header>
+<div class="a-shell">
+<nav th:replace="~{fragments/admin :: sidebar('customers')}"></nav>
+<main id="main-content" class="a-content">
+
+    <a th:href="@{/users/admin/customers}" class="u-back"><svg class="u-icon" aria-hidden="true"><use href="#u-arrow-left"/></svg>All customers</a>
+
+    <header class="u-page-head">
+        <div class="u-profile-hero">
+            <span class="u-avatar" aria-hidden="true" th:text="${customer.initials()}">SC</span>
+            <div>
+                <p class="u-eyebrow mb-1">Customer <span class="u-mono" th:text="${customer.id}">U001</span></p>
+                <h1 class="u-profile-name" th:text="${customer.fullName}">Sample Customer</h1>
+                <div class="u-badges">
+                    <span th:replace="~{user/fragments/user-ui :: type(${customer})}"></span>
+                    <span th:replace="~{user/fragments/user-ui :: status(${customer})}"></span>
+                    <span th:unless="${customer.hasPassword}" class="u-badge u-badge--neutral">No password set</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div th:replace="~{user/fragments/user-ui :: flash}"></div>
+
+    <div th:if="${customer.deleted}" class="u-alert u-alert--info" role="note">
+        <svg class="u-icon" aria-hidden="true"><use href="#u-info"/></svg>
+        <span>This account was deleted. Personal details were erased; the ID is kept so order history stays valid.</span>
+    </div>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <!-- Edit details (not shown for deleted accounts) -->
+            <section th:unless="${customer.deleted}" class="u-card" aria-labelledby="edit-title">
+                <h2 id="edit-title" class="u-card-title">Customer details</h2>
+                <p class="u-card-sub">Passwords and roles can't be changed here.</p>
+
+                <div th:if="${#fields.hasErrors('form.*')}" class="u-alert u-alert--error" role="alert">
+                    <svg class="u-icon" aria-hidden="true"><use href="#u-alert"/></svg><span>Please correct the highlighted fields.</span>
+                </div>
+
+                <form th:action="@{/users/admin/{id}/edit(id=${customer.id})}" th:object="${form}" method="post" novalidate>
+                    <div th:replace="~{user/fragments/user-ui :: textField('fullName', 'Full name', 'text', 'off', null, true)}"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div th:replace="~{user/fragments/user-ui :: textField('email', 'Email address', 'email', 'off', null, true)}"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div th:replace="~{user/fragments/user-ui :: textField('phone', 'Phone number', 'tel', 'off', null, false)}"></div>
+                        </div>
+                    </div>
+                    <div th:replace="~{user/fragments/user-ui :: textField('address', 'Address', 'text', 'off', null, false)}"></div>
+                    <div class="u-field">
+                        <label for="customerType" class="form-label">Customer type</label>
+                        <select th:field="*{customerType}" class="form-select"
+                                th:classappend="${#fields.hasErrors('customerType')} ? 'is-invalid'">
+                            <option th:each="t : ${customerTypes}" th:value="${t.name()}"
+                                    th:text="${t.label} + (${t.name() == 'LOYALTY'} ? ' (5% discount)' : ' (no discount)')">Regular</option>
+                        </select>
+                        <div th:if="${#fields.hasErrors('customerType')}" class="u-error" th:errors="*{customerType}">Error</div>
+                    </div>
+                    <div class="u-form-actions">
+                        <button type="submit" class="btn btn-u-primary">
+                            <svg class="u-icon" aria-hidden="true"><use href="#u-check"/></svg>Save changes
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+
+        <div class="col-lg-4">
+            <section class="u-card" aria-labelledby="account-title">
+                <h2 id="account-title" class="u-card-title">Account</h2>
+                <dl class="u-details mt-3" style="grid-template-columns: 1fr;">
+                    <div><dt>Customer ID</dt><dd class="u-mono" th:text="${customer.id}">U001</dd></div>
+                    <div><dt>Joined</dt><dd th:text="${#temporals.format(customer.createdDate, 'd MMMM yyyy')}">10 November 2026</dd></div>
+                    <div><dt>Discount</dt><dd th:text="${customer.discountPercent()} + '%'">0%</dd></div>
+                </dl>
+            </section>
+
+            <section th:unless="${customer.deleted}" class="u-card" aria-labelledby="status-title">
+                <h2 id="status-title" class="u-card-title">Status</h2>
+                <p class="u-card-sub" th:text="${customer.active} ? 'This customer can sign in.' : 'This customer cannot sign in.'">This customer can sign in.</p>
+
+                <form th:if="${customer.active}" th:action="@{/users/admin/{id}/status(id=${customer.id})}" method="post"
+                      data-confirm-title="Deactivate this customer?"
+                      th:attr="data-confirm=${customer.fullName} + ' will be signed out and won\'t be able to sign in until reactivated.'"
+                      data-confirm-action="Deactivate">
+                    <input type="hidden" name="active" value="false">
+                    <button type="submit" class="btn btn-u-danger-ghost w-100">
+                        <svg class="u-icon" aria-hidden="true"><use href="#u-power"/></svg>Deactivate account
+                    </button>
+                </form>
+                <form th:unless="${customer.active}" th:action="@{/users/admin/{id}/status(id=${customer.id})}" method="post">
+                    <input type="hidden" name="active" value="true">
+                    <button type="submit" class="btn btn-u-success-ghost w-100" th:disabled="${!customer.hasPassword}">
+                        <svg class="u-icon" aria-hidden="true"><use href="#u-check-circle"/></svg>Activate account
+                    </button>
+                    <p th:unless="${customer.hasPassword}" class="form-text mt-2 mb-0">
+                        This record has no password (for example, migrated sample data), so it can't be activated.
+                    </p>
+                </form>
+            </section>
+
+            <section th:unless="${customer.deleted}" class="u-card u-danger-zone" aria-labelledby="danger-title">
+                <h2 id="danger-title" class="u-card-title">Delete account</h2>
+                <p class="u-card-sub">Erases personal details. The ID is kept for order history.</p>
+                <form th:action="@{/users/admin/{id}/delete(id=${customer.id})}" method="post"
+                      data-confirm-title="Delete this customer?"
+                      th:attr="data-confirm='Customer ' + ${customer.id} + ' will have their name, email, phone, address and password erased. This cannot be undone.'"
+                      data-confirm-action="Delete customer">
+                    <button type="submit" class="btn btn-u-danger w-100">
+                        <svg class="u-icon" aria-hidden="true"><use href="#u-trash"/></svg>Delete customer
+                    </button>
+                </form>
+            </section>
+        </div>
+    </div>
+
+</main>
+</div>
+<dialog th:replace="~{user/fragments/user-ui :: confirm-dialog}"></dialog>
+<th:block th:replace="~{user/fragments/user-ui :: scripts}"></th:block>
+</body>
+</html>
