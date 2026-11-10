@@ -1,3 +1,7 @@
-# Order Management - fictional sample records only
-# id|userId|productId|quantity|status
-O001|U001|P001|2|PENDING
+# id|customerId|productId|productName|quantity|unitPrice|orderType|deliveryAddress|status|orderDate
+O001|U001|P001|Chocolate Fudge Cake|2|1200.00|DELIVERY|42 Galle Road, Colombo 03|PREPARING|2026-10-14
+O002|U002|P003|Butter Croissant|5|180.00|PICKUP||PREPARING|2026-10-15
+O003|U001|P002|Strawberry Cupcake|12|150.00|DELIVERY|42 Galle Road, Colombo 03|DELIVERED|2026-10-13
+O004|U003|P004|Sourdough Bread|3|350.00|PICKUP||READY|2026-10-16
+O005|U002|P001|Chocolate Fudge Cake|1|1200.00|DELIVERY|18 Flower Road, Colombo 07|CANCELLED|2026-10-12
+O006|uoo1|p101|choclata cake|3|299.63|DELIVERY|wfefffffffffffffff|PENDING|2026-10-16

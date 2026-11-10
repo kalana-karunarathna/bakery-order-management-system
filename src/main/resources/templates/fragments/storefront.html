@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!--
+  Customer-facing storefront fragments (homepage + customer Order Management pages).
+
+  This file is additive: fragments/layout.html is unchanged and is still used by the
+  User, Product, Cake Booking, Payment and Feedback pages and by the Order admin dashboard.
+  Other components can switch to these fragments when they are ready:
+      <head th:replace="~{fragments/storefront :: head('Page title')}"></head>
+      <header th:replace="~{fragments/storefront :: header('')}"></header>
+      <footer th:replace="~{fragments/storefront :: footer}"></footer>
+      <th:block th:replace="~{fragments/storefront :: scripts}"></th:block>
+  and add class="sf-body" to <body>.
+-->
+
+<head th:fragment="head(pageTitle)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${pageTitle} + ' | Hearth &amp; Crumb Bakery'">Hearth &amp; Crumb Bakery</title>
+    <th:block th:replace="~{fragments/storefront :: head-assets}"></th:block>
+</head>
+
+<!-- Fonts + stylesheets shared by every storefront page (also used by order/fragments/order-ui head). -->
+<th:block th:fragment="head-assets">
+    <link rel="preload" th:href="@{/fonts/fraunces-latin-wght-normal.woff2}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" th:href="@{/fonts/dm-sans-latin-wght-normal.woff2}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" th:href="@{/vendor/bootstrap/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/storefront.css}">
+</th:block>
+<body>
+
+<!-- Brand mark (original artwork): a wheat ear inside a rounded seal. -->
+<svg th:fragment="logo-mark" class="sf-logo-mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+    <rect x="1" y="1" width="38" height="38" rx="12" class="sf-logo-bg"/>
+    <path class="sf-logo-line" d="M20 31V13"/>
+    <path class="sf-logo-line" d="M20 15c-3.2-.4-5-2.6-5.2-5.6 3 .3 5 2.4 5.2 5.6Zm0 0c3.2-.4 5-2.6 5.2-5.6-3 .3-5 2.4-5.2 5.6Z"/>
+    <path class="sf-logo-line" d="M20 21c-3.2-.4-5-2.6-5.2-5.6 3 .3 5 2.4 5.2 5.6Zm0 0c3.2-.4 5-2.6 5.2-5.6-3 .3-5 2.4-5.2 5.6Z"/>
+    <path class="sf-logo-line" d="M20 27c-3.2-.4-5-2.6-5.2-5.6 3 .3 5 2.4 5.2 5.6Zm0 0c3.2-.4 5-2.6 5.2-5.6-3 .3-5 2.4-5.2 5.6Z"/>
+</svg>
+
+<!--
+  Customer navigation. `active` is one of: home, shop, cakes, orders (or '' for none).
+  Admin links are deliberately NOT in this header (see footer "Staff" column).
+-->
+<header th:fragment="header(active)" class="sf-header">
+    <a class="skip-link btn btn-light" href="#main-content">Skip to content</a>
+    <nav class="navbar navbar-expand-lg sf-nav" aria-label="Main navigation">
+        <div class="container">
+            <a class="sf-brand" th:href="@{/}">
+                <svg th:replace="~{fragments/storefront :: logo-mark}"></svg>
+                <span class="sf-brand-text">
+                    <span class="sf-brand-name">Hearth <span class="sf-amp">&amp;</span> Crumb</span>
+                    <span class="sf-brand-sub">Bakery</span>
+                </span>
+            </a>
+
+            <div class="sf-nav-tools">
+                <!-- Not a link or button on purpose: the cart is not implemented yet (future integration). -->
+                <span class="sf-icon-btn is-disabled" role="img" aria-label="Cart, coming soon" title="Cart: coming soon">
+                    <svg class="sf-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9L5 8Z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>
+                    <span class="sf-soon" aria-hidden="true">Soon</span>
+                </span>
+                <a class="sf-icon-btn" th:href="@{/users}" title="Account">
+                    <svg class="sf-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+                    <span class="visually-hidden">Account</span>
+                </a>
+                <button class="sf-toggler navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#sf-navigation" aria-controls="sf-navigation"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+
+            <div class="collapse navbar-collapse" id="sf-navigation">
+                <ul class="navbar-nav sf-nav-links">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}" th:classappend="${active == 'home'} ? 'is-active'"
+                           th:attr="aria-current=${active == 'home'} ? 'page'">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/products}" th:classappend="${active == 'shop'} ? 'is-active'"
+                           th:attr="aria-current=${active == 'shop'} ? 'page'">Shop</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/cake-bookings}" th:classappend="${active == 'cakes'} ? 'is-active'"
+                           th:attr="aria-current=${active == 'cakes'} ? 'page'">Custom Cakes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/orders/my-orders}" th:classappend="${active == 'orders'} ? 'is-active'"
+                           th:attr="aria-current=${active == 'orders'} ? 'page'">My Orders</a>
+                    </li>
+                </ul>
+                <a class="btn sf-btn sf-btn-primary sf-nav-cta" th:href="@{/orders/place}">Order now</a>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<footer th:fragment="footer" class="sf-footer">
+    <div class="container">
+        <div class="sf-footer-grid">
+            <div class="sf-footer-brand">
+                <a class="sf-brand sf-brand--light" th:href="@{/}">
+                    <svg th:replace="~{fragments/storefront :: logo-mark}"></svg>
+                    <span class="sf-brand-text">
+                        <span class="sf-brand-name">Hearth <span class="sf-amp">&amp;</span> Crumb</span>
+                        <span class="sf-brand-sub">Bakery</span>
+                    </span>
+                </a>
+                <p>Breads, pastries and celebration cakes, ordered online for pickup or delivery.</p>
+            </div>
+
+            <nav class="sf-footer-col" aria-label="Shop">
+                <h2 class="sf-footer-title">Shop</h2>
+                <ul>
+                    <li><a th:href="@{/products}">All products</a></li>
+                    <li><a th:href="@{/cake-bookings}">Custom cakes</a></li>
+                    <li><a th:href="@{/orders/place}">Place an order</a></li>
+                    <li><a th:href="@{/orders/my-orders}">My orders</a></li>
+                </ul>
+            </nav>
+
+            <nav class="sf-footer-col" aria-label="Customer">
+                <h2 class="sf-footer-title">Customer</h2>
+                <ul>
+                    <li><a th:href="@{/users}">Account</a></li>
+                    <li><a th:href="@{/payments}">Payments &amp; invoices</a></li>
+                    <li><a th:href="@{/feedback}">Feedback &amp; reviews</a></li>
+                    <li><a th:href="@{/orders}">Ordering help</a></li>
+                </ul>
+            </nav>
+
+            <div class="sf-footer-col">
+                <h2 class="sf-footer-title">Contact</h2>
+                <!-- Placeholder contact details: replace with real ones before going live. -->
+                <ul class="sf-contact">
+                    <li><span class="sf-placeholder-tag">Placeholder</span> Bakery address</li>
+                    <li><span class="sf-placeholder-tag">Placeholder</span> Phone number</li>
+                    <li><span class="sf-placeholder-tag">Placeholder</span> Email address</li>
+                </ul>
+            </div>
+
+            <div class="sf-footer-col">
+                <h2 class="sf-footer-title">Staff</h2>
+                <ul>
+                    <li><a th:href="@{/orders/admin}">Order admin dashboard</a></li>
+                </ul>
+                <p class="sf-footer-note">Staff login is not implemented yet. Admin pages must be protected
+                    by User Management before release.</p>
+            </div>
+        </div>
+
+        <div class="sf-footer-bottom">
+            <p>&copy; <span th:text="${#temporals.format(#temporals.createNow(), 'yyyy')}">2026</span>
+                Hearth &amp; Crumb &middot; Bakery Order and Custom Cake Booking Platform</p>
+            <p>Photography from <a href="https://unsplash.com" rel="noopener">Unsplash</a>
+                (Unsplash License). Illustrative only.</p>
+        </div>
+    </div>
+</footer>
+
+<!--
+  Product card for the homepage demo catalogue. Demo products are display-only:
+  no prices, no stock, and the action opens the normal order form without passing product data.
+-->
+<article th:fragment="product(name, category, categoryLabel, image, alt, blurb)"
+         class="sf-product" th:attr="data-category=${category}">
+    <div class="sf-product-media">
+        <img th:src="@{${image}}" th:alt="${alt}" width="560" height="700" loading="lazy" decoding="async">
+        <span class="sf-product-tag" th:text="${categoryLabel}">Cakes</span>
+    </div>
+    <div class="sf-product-body">
+        <h3 class="sf-product-name" th:text="${name}">Product</h3>
+        <p class="sf-product-blurb" th:text="${blurb}">Description</p>
+        <div class="sf-product-foot">
+            <span class="sf-product-price">Price at launch</span>
+            <a class="sf-product-action" th:href="@{/orders/place}"
+               th:attr="aria-label='Start an order (' + ${name} + ' is a preview item, enter product details on the order form)'">
+                Order
+                <svg class="sf-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+        </div>
+    </div>
+</article>
+
+<th:block th:fragment="scripts">
+    <script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}" defer></script>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/storefront.js}" defer></script>
+</th:block>
+
+</body>
+</html>
