@@ -125,8 +125,9 @@ the tracked `data/users.txt`.
 
 ### Temporary access rules (must be revisited)
 
-`SecurityConfig.OTHER_MODULE_ROUTES` keeps `/products/**`, `/cake-bookings/**`, `/payments/**`
+`SecurityConfig.OTHER_MODULE_ROUTES` keeps `/products/**`, `/cake-bookings/**`
 and `/feedback/**` **public** so those modules keep working while they have no sign-in integration.
+(`/payments/**` is now integrated and requires sign-in; see [PAYMENT_INTEGRATION.md](PAYMENT_INTEGRATION.md).)
 This is not secure for their admin/management actions, so the site as a whole is **not** fully
 secured yet. Each module should add its own rules when integrating, as Orders now does:
 

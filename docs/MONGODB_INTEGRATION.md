@@ -80,7 +80,9 @@ Database `bakery_db`, collections:
 | --- | --- |
 | `users` | accounts (`_id` = U001…, role, customerType, fullName, email, phone, address, passwordHash, status, createdDate, version) |
 | `orders` | orders (`_id` = O001…, customerId, productId, productName, quantity, unitPrice, orderType, deliveryAddress, status, orderDate, version) |
-| `counters` | ID sequences: `{ _id: "users", seq: N }`, `{ _id: "orders", seq: N }` |
+| `payments` | payments (`_id` = PAY001…, targetType, targetId, customerId, total/amount as Decimal128, method, purpose, status, reference, referenceKey, requestKey, createdAt, updatedAt, version). See [PAYMENT_INTEGRATION.md](PAYMENT_INTEGRATION.md). |
+| `payment_locks` | one short-lived lease document that serialises payment balance checks across application instances |
+| `counters` | ID sequences: `{ _id: "users", seq: N }`, `{ _id: "orders", seq: N }`, `{ _id: "payments", seq: N }` |
 
 Collections, validators, indexes and counters are created automatically (idempotently) the first
 time the application starts in MongoDB mode. Nothing is ever dropped or deleted at startup.

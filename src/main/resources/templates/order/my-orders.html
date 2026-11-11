@@ -49,11 +49,21 @@
                     <span th:replace="~{order/fragments/order-ui :: status(${order})}"></span>
                 </div>
 
-                <dl class="o-order-card-facts">
+                <dl class="o-order-card-facts" th:classappend="${paymentSummaries.containsKey(order.id)} ? 'o-order-card-facts--payment'">
                     <div><dt>Quantity</dt><dd th:text="${order.quantity}">2</dd></div>
                     <div><dt>Type</dt><dd><span th:replace="~{order/fragments/order-ui :: type(${order})}"></span></dd></div>
                     <div><dt>Total</dt>
                         <dd class="o-money" th:text="'LKR ' + ${#numbers.formatDecimal(order.calculateTotal(), 1, 'COMMA', 2, 'POINT')}">LKR 2,650.00</dd></div>
+                    <!-- Payment status from the payment records (server-side); separate from the order status. -->
+                    <th:block th:with="pay=${paymentSummaries[order.id]}"><div th:if="${pay != null}"><dt>Payment</dt>
+                        <dd>
+                            <span class="o-status" th:classappend="'o-status--' + ${pay.status.badge}" data-payment-status
+                                  th:attr="data-status=${pay.status.name()}">
+                                <span class="o-status-dot" aria-hidden="true"></span><span th:text="${pay.status.label}">Unpaid</span>
+                            </span>
+                            <small th:if="${pay.available and pay.paid.signum() > 0 and pay.outstanding.signum() > 0}" class="o-pay-note"
+                                   th:text="'LKR ' + ${#numbers.formatDecimal(pay.outstanding, 1, 'COMMA', 2, 'POINT')} + ' outstanding'">LKR 50.00 outstanding</small>
+                        </dd></div></th:block>
                 </dl>
 
                 <div class="o-order-card-actions">
@@ -61,7 +71,14 @@
                        th:attr="aria-label='View details of order ' + ${order.id}">
                         <svg class="o-icon" aria-hidden="true"><use href="#i-eye"/></svg>View details
                     </a>
-                    <th:block th:if="${order.editable}">
+                    <th:block th:with="pay=${paymentSummaries[order.id]}">
+                    <a th:if="${pay != null and pay.available and order.status.name() != 'CANCELLED' and pay.payable.signum() > 0}"
+                       th:href="@{/payments/new(orderId=${order.id})}" class="btn btn-o-ghost btn-sm" data-pay-balance
+                       th:attr="aria-label=${pay.paid.signum() > 0 or pay.pending.signum() > 0} ? 'Pay remaining balance of order ' + ${order.id} : 'Pay for order ' + ${order.id}">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-receipt"/></svg><th:block th:text="${pay.paid.signum() > 0 or pay.pending.signum() > 0} ? 'Pay balance' : 'Pay'">Pay</th:block>
+                    </a>
+                    </th:block>
+                    <th:block th:if="${order.editable and !paymentLockedIds.contains(order.id)}">
                         <a th:href="@{/orders/{id}/edit(id=${order.id})}" class="btn btn-o-ghost btn-sm"
                            th:attr="aria-label='Edit order ' + ${order.id}">
                             <svg class="o-icon" aria-hidden="true"><use href="#i-edit"/></svg>Edit
@@ -76,9 +93,9 @@
                             </button>
                         </form>
                     </th:block>
-                    <span th:unless="${order.editable}" class="o-locked-note">
+                    <span th:unless="${order.editable and !paymentLockedIds.contains(order.id)}" class="o-locked-note">
                         <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
-                        <th:block th:text="${order.status.name() == 'CANCELLED'} ? 'Cancelled orders cannot be changed' : 'Changes are only possible while Pending'">Changes are only possible while Pending</th:block>
+                        <th:block th:text="${order.status.name() == 'CANCELLED'} ? 'Cancelled orders cannot be changed' : (${paymentLockedIds.contains(order.id)} ? 'Payment recorded: contact the bakery for changes' : 'Changes are only possible while Pending')">Changes are only possible while Pending</th:block>
                     </span>
                 </div>
             </li>
