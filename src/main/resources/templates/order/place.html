@@ -14,17 +14,15 @@
     <header class="o-page-head">
         <p class="o-eyebrow">New order</p>
         <h1 class="o-title">Place an order</h1>
-        <p class="o-subtitle">Fill in the details below. Your total updates as you go.</p>
+        <p class="o-subtitle">Pick a product, choose pickup or delivery, and see your total as you go.</p>
     </header>
 
     <div th:replace="~{order/fragments/order-ui :: flash}"></div>
 
     <!--
-      POST /orders/place with productId, productName, quantity, unitPrice, orderType, deliveryAddress.
-      There is deliberately NO customerId field: the server uses the signed-in customer.
-      NOTE: unitPrice is still entered here (bounded and validated by OrderService; the total is
-      always calculated on the server). Once Product Management exposes its catalogue, the server
-      must look up the price by productId instead of accepting this value.
+      POST /orders/place with productId (chosen from the demo menu), quantity, orderType, deliveryAddress.
+      There is deliberately NO customerId, product name or price field: the server uses the signed-in
+      customer and looks the product's name and price up in the catalog by its ID.
     -->
     <form th:action="@{/orders/place}" method="post" novalidate id="orderForm"
           class="o-order-form" data-order-form="place"
@@ -65,41 +63,18 @@
                         <span class="o-step-num" aria-hidden="true">2</span>
                         <div>
                             <h2 id="sec-product" class="o-card-title">Product</h2>
-                            <p class="o-card-sub">Enter the product you would like to order.</p>
+                            <p class="o-card-sub">Choose something from today's menu. Prices are set by the bakery.</p>
                         </div>
                     </div>
 
-                    <div class="o-integration-note">
-                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
-                        <span>Product selection will be connected to the bakery catalogue (Product Management).
-                              Until then, please enter the product details manually.</span>
-                    </div>
+                    <!-- Demo menu: only the product ID is posted; the server sets the name and price. -->
+                    <fieldset class="o-menu-picker" id="productPicker" aria-describedby="productPicker-error">
+                        <legend class="visually-hidden">Choose a product</legend>
+                        <div th:replace="~{order/fragments/catalog :: menu(true, ${form.productId})}"></div>
+                    </fieldset>
+                    <div id="productPicker-error" class="o-field-error" aria-live="polite"></div>
 
-                    <div class="row g-3">
-                        <div class="col-sm-5 o-field">
-                            <label for="productId" class="form-label">Product ID <span class="o-req" aria-hidden="true">*</span></label>
-                            <input type="text" class="form-control" id="productId" name="productId"
-                                   placeholder="e.g. P001" required autocomplete="off" maxlength="40"
-                                   th:value="${form.productId}" aria-describedby="productId-error">
-                            <div id="productId-error" class="o-field-error" aria-live="polite"></div>
-                        </div>
-                        <div class="col-sm-7 o-field">
-                            <label for="productName" class="form-label">Product name <span class="o-req" aria-hidden="true">*</span></label>
-                            <input type="text" class="form-control" id="productName" name="productName"
-                                   placeholder="e.g. Chocolate Fudge Cake" required autocomplete="off" maxlength="100"
-                                   th:value="${form.productName}" aria-describedby="productName-error">
-                            <div id="productName-error" class="o-field-error" aria-live="polite"></div>
-                        </div>
-                        <div class="col-sm-6 o-field">
-                            <label for="unitPrice" class="form-label">Unit price <span class="o-req" aria-hidden="true">*</span></label>
-                            <div class="input-group o-input-group">
-                                <span class="input-group-text">LKR</span>
-                                <input type="number" class="form-control" id="unitPrice" name="unitPrice"
-                                       min="0.01" max="100000" step="0.01" placeholder="0.00" required inputmode="decimal"
-                                       th:value="${form.unitPrice}" aria-describedby="unitPrice-error">
-                            </div>
-                            <div id="unitPrice-error" class="o-field-error" aria-live="polite"></div>
-                        </div>
+                    <div class="row g-3 mt-1">
                         <div class="col-sm-6 o-field">
                             <label for="quantity" class="form-label">Quantity <span class="o-req" aria-hidden="true">*</span></label>
                             <div class="o-stepper" data-stepper>
@@ -179,9 +154,9 @@
                     <h2 id="summary-title" class="o-card-title">Order summary</h2>
 
                     <div class="o-summary-product">
-                        <span class="o-summary-thumb" aria-hidden="true"><svg class="o-icon"><use href="#i-cake"/></svg></span>
+                        <span class="o-summary-thumb" aria-hidden="true"><svg class="o-icon" data-summary="icon"><use href="#i-cake"/></svg><img data-summary="image" alt="" hidden></span>
                         <div>
-                            <div class="o-summary-name" data-summary="productName">No product entered yet</div>
+                            <div class="o-summary-name" data-summary="productName">No product selected yet</div>
                             <div class="o-summary-meta" data-summary="productId">&mdash;</div>
                         </div>
                     </div>
