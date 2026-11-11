@@ -1,19 +1,124 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Custom Cake Booking')}"></head>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('My Cake Bookings')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
+
 <main id="main-content" class="container py-5">
-    <a class="link-secondary" th:href="@{/}">Back to home</a>
-    <h1 class="display-6 fw-bold mt-4">Custom Cake Booking</h1>
-    <p class="lead">Plan a custom cake for your next celebration.</p>
-    <div class="card module-card mt-4">
-        <div class="card-body p-4">
-            <h2 class="h5">Coming soon</h2>
-            <p class="mb-0">This section is being prepared. Please check back for updates.</p>
+
+    <!-- Back link -->
+    <a class="link-secondary" th:href="@{/}">← Back to home</a>
+
+    <!-- Page title -->
+    <div class="d-flex align-items-center justify-content-between mt-4 mb-3 flex-wrap gap-2">
+        <h1 class="display-6 fw-bold mb-0">🎂 Custom Cake Bookings</h1>
+        <div class="d-flex gap-2">
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/cake-bookings/admin}" class="btn btn-outline-dark fw-semibold">
+                Staff / Admin View
+            </a>
+            <a th:href="@{/cake-bookings/new}" class="btn btn-warning fw-semibold">
+                + New Booking
+            </a>
         </div>
     </div>
+
+    <!-- Flash success message (shown once after a redirect) -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Flash error message -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Empty state -->
+    <div th:if="${#lists.isEmpty(bookings)}" class="card module-card">
+        <div class="card-body p-4 text-center">
+            <h2 class="h5">No bookings yet</h2>
+            <p class="text-secondary mb-3">You haven't placed any cake bookings. Start by clicking "New Booking".</p>
+            <a th:href="@{/cake-bookings/new}" class="btn btn-warning">Book Your First Cake</a>
+        </div>
+    </div>
+
+    <!-- Bookings table -->
+    <div th:if="${not #lists.isEmpty(bookings)}" class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Image</th>
+                            <th scope="col">Booking ID</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Flavour</th>
+                            <th scope="col">Delivery Date</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Est. Price (Rs.)</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="b : ${bookings}">
+                            <!-- Thumbnail -->
+                            <td>
+                                <img th:if="${b.imageFileName != null}"
+                                     th:src="@{/cake-images/{f}(f=${b.imageFileName})}"
+                                     alt="Design" width="60" height="60"
+                                     class="rounded object-fit-cover border"/>
+                                <span th:if="${b.imageFileName == null}"
+                                      class="text-secondary small">No image</span>
+                            </td>
+                            <!-- ID -->
+                            <td>
+                                <a th:href="@{/cake-bookings/{id}(id=${b.bookingId})}"
+                                   class="fw-semibold text-decoration-none"
+                                   th:text="${b.bookingId}">CB001</a>
+                            </td>
+                            <!-- Type -->
+                            <td th:text="${b.cake.getCakeType()}">Birthday Cake</td>
+                            <!-- Flavour -->
+                            <td th:text="${b.cake.flavour}">Chocolate</td>
+                            <!-- Delivery date -->
+                            <td th:text="${#temporals.format(b.deliveryDate, 'dd MMM yyyy')}">01 Jan 2027</td>
+                            <!-- Status badge -->
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${b.status.badgeClass}"
+                                      th:text="${b.status.label}">Pending</span>
+                            </td>
+                            <!-- Estimated / Final price -->
+                            <td th:text="${#numbers.formatDecimal(b.price, 1, 2)}">3000.00</td>
+                            <!-- Action buttons -->
+                            <td>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    <!-- View always available -->
+                                    <a th:href="@{/cake-bookings/{id}(id=${b.bookingId})}"
+                                       class="btn btn-sm btn-outline-secondary">View</a>
+                                    <!-- Edit and Delete only for PENDING -->
+                                    <th:block th:if="${b.pending}">
+                                        <a th:href="@{/cake-bookings/{id}/edit(id=${b.bookingId})}"
+                                           class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <!-- Delete uses a form POST to prevent accidental deletes -->
+                                        <form th:action="@{/cake-bookings/{id}/delete(id=${b.bookingId})}"
+                                              method="post" class="d-inline"
+                                              onsubmit="return confirm('Are you sure you want to cancel this booking? This cannot be undone.');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                                        </form>
+                                    </th:block>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </main>
+
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 </body>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Error')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+
+<main id="main-content" class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 text-center">
+            <div class="display-1 mb-3">🚫</div>
+            <h1 class="h3 fw-bold">Something went wrong</h1>
+            <p class="text-secondary" th:text="${errorMessage}">An unexpected error occurred.</p>
+            <a th:href="@{/cake-bookings}" class="btn btn-warning mt-3">Back to My Bookings</a>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
+
