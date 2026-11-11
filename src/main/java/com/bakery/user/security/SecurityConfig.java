@@ -25,7 +25,10 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
  *   <li>Orders: {@code /orders} landing is public; placing, listing, editing and cancelling own
  *       orders is CUSTOMER-only; {@code /orders/admin}, status changes and deletion are ADMIN-only;
  *       order detail requires sign-in (owner or ADMIN, checked in OrderService).</li>
- *   <li><b>TEMPORARY:</b> {@code /products}, {@code /cake-bookings}, {@code /payments},
+ *   <li>Payments: every {@code /payments} page requires sign-in (customers see only their own payments,
+ *       checked in PaymentService); {@code /payments/admin} and payment deletion are ADMIN-only.
+ *       Confirming and refunding are also admin-only, enforced in PaymentService.</li>
+ *   <li><b>TEMPORARY:</b> {@code /products}, {@code /cake-bookings},
  *       {@code /feedback} and everything below them stay public so other modules keep working.
  *       Each module must add its own rules when it integrates sign-in. See docs/USER_MANAGEMENT.md.</li>
  *   <li>Anything else requires sign-in.</li>
@@ -43,7 +46,6 @@ public class SecurityConfig {
     static final String[] OTHER_MODULE_ROUTES = {
             "/products", "/products/**",
             "/cake-bookings", "/cake-bookings/**",
-            "/payments", "/payments/**",
             "/feedback", "/feedback/**"
     };
 
@@ -83,6 +85,9 @@ public class SecurityConfig {
                 .requestMatchers("/orders/place", "/orders/my-orders", "/orders/*/edit", "/orders/*/cancel").hasRole("CUSTOMER")
                 .requestMatchers("/orders").permitAll()
                 .requestMatchers("/orders/**").authenticated()
+                // Payment and Invoice Management. Ownership and admin-only status changes are checked in PaymentService.
+                .requestMatchers("/payments/admin", "/payments/admin/**", "/payments/*/delete").hasRole("ADMIN")
+                .requestMatchers("/payments", "/payments/**").authenticated()
                 .requestMatchers(OTHER_MODULE_ROUTES).permitAll()
                 .anyRequest().authenticated())
             .formLogin(form -> form

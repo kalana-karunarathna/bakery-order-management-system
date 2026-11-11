@@ -136,6 +136,10 @@
                                th:attr="aria-label='View order ' + ${order.id}" th:title="'View order ' + ${order.id}">
                                 <svg class="o-icon" aria-hidden="true"><use href="#i-eye"/></svg>
                             </a>
+                            <a th:href="@{/payments/admin(query=${order.id})}" class="btn btn-o-icon"
+                               th:attr="aria-label='Payments for order ' + ${order.id}" th:title="'Payments for order ' + ${order.id}">
+                                <svg class="o-icon" aria-hidden="true"><use href="#i-receipt"/></svg>
+                            </a>
                             <form th:action="@{/orders/{id}/delete(id=${order.id})}" method="post" class="d-inline"
                                   data-confirm-title="Delete this order permanently?"
                                   th:attr="data-confirm='Order ' + ${order.id} + ' for customer ' + ${order.customerId} + ' will be removed from the records. This cannot be undone.'"

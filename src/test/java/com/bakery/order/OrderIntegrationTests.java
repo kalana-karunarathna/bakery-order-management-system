@@ -97,15 +97,18 @@ class OrderIntegrationTests {
     void customerPlacesOrderAndItIsLinkedToTheirAccountNotToSubmittedIds() throws Exception {
         MvcResult result = mvc.perform(post("/orders/place").with(csrf()).with(user(as(alice)))
                         .param("customerId", bob)                     // attempted spoof, must be ignored
-                        .param("productId", "P003").param("productName", "Cinnamon Rolls")
-                        .param("quantity", "4").param("unitPrice", "250").param("orderType", "PICKUP"))
+                        // Demo menu product P107 (Glazed Cinnamon Roll, LKR 420). A tampered name and price must be ignored.
+                        .param("productId", "P107").param("productName", "Free Cake").param("unitPrice", "1")
+                        .param("quantity", "4").param("orderType", "PICKUP"))
                 .andExpect(redirectedUrlPattern("/orders/O*"))
                 .andExpect(flash().attribute("successMessage", containsString("placed successfully")))
                 .andReturn();
         String newId = result.getResponse().getRedirectedUrl().substring("/orders/".length());
         Order saved = order(newId);
         assertEquals(alice, saved.getCustomerId());
-        assertEquals(1000.0, saved.calculateTotal(), 0.001, "total is calculated on the server");
+        assertEquals("Glazed Cinnamon Roll", saved.getProductName(), "name comes from the catalog");
+        assertEquals(420.0, saved.getUnitPrice(), 0.001, "price comes from the catalog");
+        assertEquals(1680.0, saved.calculateTotal(), 0.001, "total is calculated on the server");
     }
 
     @Test
@@ -121,27 +124,28 @@ class OrderIntegrationTests {
     @Test
     void invalidOrdersAreRejectedWithFriendlyMessagesAndNothingIsSaved() throws Exception {
         String[][] cases = {
-                {"0", "250", "PICKUP", "", "Quantity must be at least 1."},
-                {"abc", "250", "PICKUP", "", "Quantity must be a whole number."},
-                {"101", "250", "PICKUP", "", "please contact the bakery"},
-                {"1", "-5", "PICKUP", "", "Unit price must be greater than zero."},
-                {"1", "500000", "PICKUP", "", "Unit price looks too high."},
-                {"1", "250", "DELIVERY", "", "Delivery address is required"},
-                {"1", "250", "BOGUS", "", "Please choose pickup or delivery."},
+                // {quantity, productId, orderType, deliveryAddress, expected message}
+                {"0", "P107", "PICKUP", "", "Quantity must be at least 1."},
+                {"abc", "P107", "PICKUP", "", "Quantity must be a whole number."},
+                {"101", "P107", "PICKUP", "", "please contact the bakery"},
+                {"1", "", "PICKUP", "", "Please choose a product from the menu."},
+                {"1", "P999", "PICKUP", "", "Please choose a product from the menu."},
+                {"1", "P107", "DELIVERY", "", "Delivery address is required"},
+                {"1", "P107", "BOGUS", "", "Please choose pickup or delivery."},
         };
         for (String[] c : cases) {
             mvc.perform(post("/orders/place").with(csrf()).with(user(as(alice)))
-                            .param("productId", "P003").param("productName", "Cinnamon Rolls")
-                            .param("quantity", c[0]).param("unitPrice", c[1]).param("orderType", c[2])
+                            .param("productId", c[1])
+                            .param("quantity", c[0]).param("orderType", c[2])
                             .param("deliveryAddress", c[3]))
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString(c[4])));
         }
         mvc.perform(post("/orders/place").with(csrf()).with(user(as(alice)))
-                        .param("productId", "P003").param("productName", "Rolls | injected")
-                        .param("quantity", "1").param("unitPrice", "250").param("orderType", "PICKUP"))
+                        .param("productId", "P107 | injected")
+                        .param("quantity", "1").param("orderType", "PICKUP"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("not allowed")));
+                .andExpect(content().string(containsString("Please choose a product from the menu.")));
         assertEquals(2, orderRepository.findAll().size());
     }
 
@@ -313,14 +317,14 @@ class OrderIntegrationTests {
         MockHttpSession session = (MockHttpSession) login.getRequest().getSession(false);
 
         MvcResult placed = mvc.perform(post("/orders/place").session(session).with(csrf())
-                        .param("productId", "P004").param("productName", "Chocolate Cupcakes")
-                        .param("quantity", "6").param("unitPrice", "200").param("orderType", "DELIVERY")
+                        .param("productId", "P102")                     // Chocolate Cupcakes (6), LKR 1,650
+                        .param("quantity", "2").param("orderType", "DELIVERY")
                         .param("deliveryAddress", "3 Main Street, Colombo"))
                 .andExpect(redirectedUrlPattern("/orders/O*")).andReturn();
         String chris = userRepository.findByEmail("chris@example.com").orElseThrow().getId();
         String id = placed.getResponse().getRedirectedUrl().substring("/orders/".length());
         assertEquals(chris, order(id).getCustomerId());
-        assertEquals(1450.0, order(id).calculateTotal(), 0.001);   // 6 × 200 + 250 delivery
+        assertEquals(3550.0, order(id).calculateTotal(), 0.001);   // 2 × 1,650 + 250 delivery
 
         mvc.perform(get("/orders/my-orders").session(session))
                 .andExpect(content().string(allOf(containsString("Chocolate Cupcakes"),

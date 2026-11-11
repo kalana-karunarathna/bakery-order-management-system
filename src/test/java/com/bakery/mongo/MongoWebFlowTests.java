@@ -105,8 +105,8 @@ class MongoWebFlowTests {
         // Place order (spoofed customer ID ignored) → order document in MongoDB
         MvcResult placed = mvc.perform(post("/orders/place").session(session).with(csrf())
                         .param("customerId", admin)
-                        .param("productId", "P004").param("productName", "Chocolate Cupcakes")
-                        .param("quantity", "6").param("unitPrice", "200").param("orderType", "DELIVERY")
+                        .param("productId", "P102")                     // demo menu: Chocolate Cupcakes (6)
+                        .param("quantity", "6").param("orderType", "DELIVERY")
                         .param("deliveryAddress", "3 Main Street, Colombo"))
                 .andExpect(redirectedUrlPattern("/orders/O*")).andReturn();
         String orderId = placed.getResponse().getRedirectedUrl().substring("/orders/".length());

@@ -23,7 +23,7 @@ public final class MongoTestSupport {
 
     public static final String DATABASE = "bakery_test_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     public static final String URI = "mongodb://127.0.0.1:27017/" + DATABASE;
-    private static final List<String> COLLECTIONS = List.of("users", "orders", "counters");
+    private static final List<String> COLLECTIONS = List.of("users", "orders", "counters", "payments", "payment_locks");
     private static Boolean available;
 
     private MongoTestSupport() {
