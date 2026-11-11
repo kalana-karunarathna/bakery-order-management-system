@@ -10,6 +10,7 @@ import com.bakery.cake.model.WeddingCake;
 import com.bakery.cake.model.AnniversaryCake;
 import com.bakery.cake.model.GeneralCustomCake;
 import com.bakery.common.TextFileStorage;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
@@ -25,6 +26,7 @@ import java.util.Optional;
  * The rest of the application never touches raw text lines.
  */
 @Repository
+@ConditionalOnProperty(name = "bakery.storage.type", havingValue = "file", matchIfMissing = true)
 public class FileCakeBookingRepository implements BookingRepository {
 
     private static final String FILE_NAME = "cake-bookings.txt";

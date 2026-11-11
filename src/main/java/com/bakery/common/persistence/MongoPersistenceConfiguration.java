@@ -13,12 +13,12 @@ import java.util.concurrent.TimeUnit;
 @ConditionalOnProperty(name = "bakery.storage.type", havingValue = "mongodb")
 public class MongoPersistenceConfiguration {
 
-    /** Fail fast (5 s instead of the driver's 30 s) when the local MongoDB service is not running. */
+    /** Fail fast with realistic timeout (15 s) for both local and cloud MongoDB Atlas clusters. */
     @Bean
     public MongoClientSettingsBuilderCustomizer bakeryMongoTimeouts() {
         return builder -> builder
-                .applyToClusterSettings(cluster -> cluster.serverSelectionTimeout(5, TimeUnit.SECONDS))
-                .applyToSocketSettings(socket -> socket.connectTimeout(5, TimeUnit.SECONDS));
+                .applyToClusterSettings(cluster -> cluster.serverSelectionTimeout(15, TimeUnit.SECONDS))
+                .applyToSocketSettings(socket -> socket.connectTimeout(15, TimeUnit.SECONDS));
     }
 
     @Bean
