@@ -1,0 +1,3 @@
+P001,Chocolate Cake,Cake,1500.0,10,Delicious chocolate cake
+P002,Chicken Roll,Pastry,120.0,50,Spicy chicken roll
+P003,White Bread,Bread,180.0,30,Fresh daily baked bread
