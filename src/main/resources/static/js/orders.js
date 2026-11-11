@@ -88,11 +88,11 @@
     const placeForm = document.querySelector('[data-order-form="place"]');
     if (placeForm) {
         const fee = num(placeForm.dataset.deliveryFee) || 0;
+        // Demo menu: the chosen product card carries its name and price (display only; the server sets the real price).
+        const picker = placeForm.querySelector("#productPicker");
+        const selected = () => placeForm.querySelector('input[name="productId"]:checked');
         const f = {
-            productId: placeForm.querySelector("#productId"),
-            productName: placeForm.querySelector("#productName"),
             quantity: placeForm.querySelector("#quantity"),
-            unitPrice: placeForm.querySelector("#unitPrice"),
             delivery: placeForm.querySelector("#typeDelivery"),
             address: placeForm.querySelector("#deliveryAddress"),
             addressGroup: placeForm.querySelector("#deliveryAddressGroup"),
@@ -115,15 +115,21 @@
         }
 
         function updateSummary() {
-            const name = f.productName.value.trim();
-            const id = f.productId.value.trim();
+            const choice = selected();
+            const name = choice ? choice.dataset.name : "";
             const nameOut = out("productName");
-            nameOut.textContent = name || "No product entered yet";
+            nameOut.textContent = name || "No product selected yet";
             nameOut.classList.toggle("is-placeholder", !name);
-            out("productId").textContent = id || "—";
+            out("productId").textContent = choice ? choice.value : "—";
+            const image = out("image");
+            if (image) {
+                image.hidden = !choice;
+                if (choice) image.src = choice.dataset.image;
+                out("icon").style.display = choice ? "none" : "";
+            }
 
             const qty = parseInt(f.quantity.value, 10);
-            const price = num(f.unitPrice.value);
+            const price = choice ? num(choice.dataset.price) : 0;
             const qtyOk = Number.isInteger(qty) && qty >= 1;
             const priceOk = price > 0;
             const deliveryFee = isDelivery() ? fee : 0;
@@ -148,22 +154,18 @@
         });
         placeForm.addEventListener("change", (event) => {
             if (event.target.name === "orderType") syncDelivery(true);
+            if (event.target.name === "productId") setError(picker, "");
             updateSummary();
         });
 
         placeForm.addEventListener("submit", (event) => {
-            const required = (label) => (field) => (field.value.trim() === "" ? `Please enter ${label}.` : "");
             const ok = validate(placeForm, [
-                [f.productId, required("the product ID")],
-                [f.productName, required("the product name")],
-                [f.unitPrice, (field) => {
-                    if (field.value.trim() === "") return "Please enter the unit price.";
-                    return num(field.value) > 0 ? "" : "Unit price must be greater than zero.";
-                }],
+                [picker, () => (selected() ? "" : "Please choose a product from the menu.")],
                 [f.quantity, quantityError],
                 [f.address, (field) =>
                     isDelivery() && field.value.trim() === "" ? "Please enter a delivery address." : ""],
             ]);
+            if (!ok && !selected()) placeForm.querySelector('input[name="productId"]')?.focus();
             if (!ok) {
                 event.preventDefault();
                 return;

@@ -53,6 +53,13 @@
         </aside>
     </section>
 
+    <!-- Demo menu (DemoProductCatalog): "Order now" opens the Place Order form with the product selected. -->
+    <section class="o-section" id="menu" aria-labelledby="orders-menu-title" th:if="${products != null and !products.isEmpty()}">
+        <h2 id="orders-menu-title" class="o-section-title">Today's menu</h2>
+        <p class="o-subtitle mb-3">Freshly baked every morning. Prices in LKR; delivery adds a flat fee.</p>
+        <div th:replace="~{order/fragments/catalog :: menu(false, '')}"></div>
+    </section>
+
     <!-- Navigation cards -->
     <section class="o-section" aria-labelledby="orders-nav-title">
         <h2 id="orders-nav-title" class="visually-hidden">Order options</h2>
