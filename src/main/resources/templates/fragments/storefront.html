@@ -88,11 +88,13 @@
                         <th:block sec:authorize="hasRole('ADMIN')">
                             <li><a class="dropdown-item" th:href="@{/users/admin}">Admin dashboard</a></li>
                             <li><a class="dropdown-item" th:href="@{/orders/admin}">Order management</a></li>
+                            <li><a class="dropdown-item" th:href="@{/payments/admin}">Payment management</a></li>
                             <li><a class="dropdown-item" th:href="@{/profile}">Admin profile</a></li>
                         </th:block>
                         <th:block sec:authorize="hasRole('CUSTOMER')">
                             <li><a class="dropdown-item" th:href="@{/profile}">My account</a></li>
                             <li><a class="dropdown-item" th:href="@{${myOrdersUrl}}">My orders</a></li>
+                            <li><a class="dropdown-item" th:href="@{/payments}">My payments</a></li>
                         </th:block>
                         <li><hr class="dropdown-divider"></li>
                         <li>
@@ -130,12 +132,17 @@
                         <a class="nav-link" th:href="@{${myOrdersUrl}}" th:classappend="${active == 'orders'} ? 'is-active'"
                            th:attr="aria-current=${active == 'orders'} ? 'page'">My Orders</a>
                     </li>
+                    <li class="nav-item" sec:authorize="hasRole('CUSTOMER')">
+                        <a class="nav-link" th:href="@{/payments}" th:classappend="${active == 'payments'} ? 'is-active'"
+                           th:attr="aria-current=${active == 'payments'} ? 'page'">Payments</a>
+                    </li>
                 </ul>
                 <!-- Administrators -->
                 <ul class="navbar-nav sf-nav-links" sec:authorize="hasRole('ADMIN')">
                     <li class="nav-item"><a class="nav-link" th:href="@{/users/admin}">Admin dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" th:href="@{/users/admin/customers}">Customers</a></li>
                     <li class="nav-item"><a class="nav-link" th:href="@{/orders/admin}">Order management</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/payments/admin}">Payments</a></li>
                     <li class="nav-item"><a class="nav-link" th:href="@{/}" th:classappend="${active == 'home'} ? 'is-active'">View site</a></li>
                 </ul>
 

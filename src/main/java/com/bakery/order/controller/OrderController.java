@@ -1,9 +1,12 @@
 package com.bakery.order.controller;
 
+import com.bakery.order.catalog.DemoProductCatalog;
+import com.bakery.order.catalog.DemoProductCatalog.DemoProduct;
 import com.bakery.order.model.Order;
 import com.bakery.order.model.OrderStatus;
 import com.bakery.order.model.OrderType;
 import com.bakery.order.service.OrderNotFoundException;
+import com.bakery.order.service.OrderPaymentSummary;
 import com.bakery.order.service.OrderService;
 import com.bakery.order.service.OrderStorageException;
 import com.bakery.user.service.AuthenticatedUser;
@@ -22,8 +25,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.support.RequestContextUtils;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Handles all HTTP requests for the Order Management module.
@@ -31,8 +36,9 @@ import java.util.Map;
  * <p>Routes and who may use them (enforced by SecurityConfig <b>and</b> {@code @PreAuthorize}):</p>
  * <ul>
  *   <li>GET  /orders              → public landing page</li>
- *   <li>GET  /orders/place        → CUSTOMER: place-order form</li>
- *   <li>POST /orders/place        → CUSTOMER: submit new order (customer = signed-in user)</li>
+ *   <li>GET  /orders/place        → CUSTOMER: place-order form with the demo menu ({@code ?product=P101} preselects)</li>
+ *   <li>POST /orders/place        → CUSTOMER: submit new order (customer = signed-in user; product name and price
+ *       come from {@link DemoProductCatalog}, never from the form)</li>
  *   <li>GET  /orders/my-orders    → CUSTOMER: the signed-in customer's orders</li>
  *   <li>GET  /orders/admin        → ADMIN: all orders</li>
  *   <li>GET  /orders/{id}         → owner or ADMIN: order detail</li>
@@ -56,17 +62,21 @@ public class OrderController {
     private final OrderService orderService;
     private final CurrentUserService currentUserService;
     private final UserService userService;
+    private final DemoProductCatalog catalog;
 
-    public OrderController(OrderService orderService, CurrentUserService currentUserService, UserService userService) {
+    public OrderController(OrderService orderService, CurrentUserService currentUserService, UserService userService,
+                           DemoProductCatalog catalog) {
         this.orderService = orderService;
         this.currentUserService = currentUserService;
         this.userService = userService;
+        this.catalog = catalog;
     }
 
     // ── Landing ───────────────────────────────────────────────────────────────
 
     @GetMapping
-    public String index() {
+    public String index(Model model) {
+        model.addAttribute("products", catalog.all());   // demo menu with "Order now" links
         return "order/index";
     }
 
@@ -74,13 +84,11 @@ public class OrderController {
 
     @GetMapping("/place")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public String placeOrderForm(Model model) {
+    public String placeOrderForm(@RequestParam(required = false) String product, Model model) {
         UserView me = userService.getView(currentUserService.requireCurrentUser().id());
         Map<String, String> form = new LinkedHashMap<>();
-        form.put("productId", "");
-        form.put("productName", "");
+        form.put("productId", catalog.find(product).map(DemoProduct::id).orElse(""));   // ?product=P101 preselects
         form.put("quantity", "1");
-        form.put("unitPrice", "");
         form.put("orderType", OrderType.PICKUP.name());
         form.put("deliveryAddress", me.address());   // pre-filled from the profile, still editable
         return placeForm(model, me, form);
@@ -89,25 +97,24 @@ public class OrderController {
     @PostMapping("/place")
     @PreAuthorize("hasRole('CUSTOMER')")
     public String placeOrder(@RequestParam(defaultValue = "") String productId,
-                             @RequestParam(defaultValue = "") String productName,
                              @RequestParam(defaultValue = "") String quantity,
-                             @RequestParam(defaultValue = "") String unitPrice,
                              @RequestParam(defaultValue = "") String orderType,
                              @RequestParam(defaultValue = "") String deliveryAddress,
                              Model model, RedirectAttributes redirectAttributes) {
         AuthenticatedUser me = currentUserService.requireCurrentUser();
         try {
-            Order saved = orderService.placeOrder(me.id(), productId, productName,
-                    parseQuantity(quantity), parsePrice(unitPrice), parseType(orderType), deliveryAddress);
+            // Name and price come from the catalog on the server; any productName/unitPrice sent by the browser is ignored.
+            DemoProduct product = catalog.find(productId)
+                    .orElseThrow(() -> new IllegalArgumentException("Please choose a product from the menu."));
+            Order saved = orderService.placeOrder(me.id(), product.id(), product.name(),
+                    parseQuantity(quantity), product.price().doubleValue(), parseType(orderType), deliveryAddress);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Order " + saved.getId() + " placed successfully!");
             return "redirect:/orders/" + saved.getId();
         } catch (IllegalArgumentException | IllegalStateException e) {
             Map<String, String> form = new LinkedHashMap<>();
-            form.put("productId", productId);
-            form.put("productName", productName);
+            form.put("productId", catalog.find(productId).map(DemoProduct::id).orElse(""));
             form.put("quantity", quantity);
-            form.put("unitPrice", unitPrice);
             form.put("orderType", orderType.isBlank() ? OrderType.PICKUP.name() : orderType);
             form.put("deliveryAddress", deliveryAddress);
             model.addAttribute("errorMessage", e.getMessage());
@@ -117,6 +124,7 @@ public class OrderController {
 
     private String placeForm(Model model, UserView me, Map<String, String> form) {
         model.addAttribute("orderTypes", OrderType.values());
+        model.addAttribute("products", catalog.all());
         model.addAttribute("customer", me);
         model.addAttribute("form", form);
         return "order/place";
@@ -128,7 +136,13 @@ public class OrderController {
     @PreAuthorize("hasRole('CUSTOMER')")
     public String myOrders(Model model) {
         AuthenticatedUser me = currentUserService.requireCurrentUser();
-        model.addAttribute("orders", orderService.getOrdersForCustomer(me.id()));
+        List<Order> orders = orderService.getOrdersForCustomer(me.id());
+        model.addAttribute("orders", orders);
+        // Orders with Pending or Paid payments can no longer be edited or cancelled online.
+        // Payment summaries are calculated on the server from the payment records of these (own) orders.
+        model.addAttribute("paymentSummaries", orderService.paymentSummaries(orders));
+        model.addAttribute("paymentLockedIds", orders.stream().filter(Order::isEditable).map(Order::getId)
+                .filter(orderService::isPaymentLocked).collect(Collectors.toSet()));
         model.addAttribute("customerName", me.fullName());
         model.addAttribute("customerId", me.id());
         return "order/my-orders";
@@ -154,6 +168,13 @@ public class OrderController {
         model.addAttribute("order", order);
         model.addAttribute("isOwner", order.getCustomerId().equals(me.id()));
         model.addAttribute("isAdmin", me.isAdmin());
+        model.addAttribute("paymentLocked", order.isEditable() && orderService.isPaymentLocked(id));
+        // Only after the owner/admin check above: another customer's order never reaches this point.
+        OrderPaymentSummary payment = orderService.paymentSummary(order).orElse(null);
+        model.addAttribute("payment", payment);
+        model.addAttribute("canPayBalance", payment != null && payment.isAvailable() && !me.isAdmin()
+                && order.getCustomerId().equals(me.id()) && order.getStatus() != OrderStatus.CANCELLED
+                && payment.getPayable().signum() > 0);
         return "order/detail";
     }
 
@@ -165,6 +186,11 @@ public class OrderController {
         Order order = orderService.getOwnOrder(id, currentUserService.requireCurrentUser().id());
         if (!order.isEditable()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Only pending orders can be edited.");
+            return "redirect:/orders/" + id;
+        }
+        if (orderService.isPaymentLocked(id)) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "This order has a payment recorded, so it can't be changed or cancelled online. Please contact the bakery.");
             return "redirect:/orders/" + id;
         }
         model.addAttribute("order", order);
@@ -237,6 +263,8 @@ public class OrderController {
             redirectAttributes.addFlashAttribute("successMessage", "Order " + id + " deleted.");
         } catch (OrderNotFoundException e) {
             redirectAttributes.addFlashAttribute("errorMessage", NOT_FOUND);
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());   // e.g. order has payments
         }
         return "redirect:/orders/admin";
     }
@@ -268,14 +296,6 @@ public class OrderController {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Quantity must be a whole number.");
-        }
-    }
-
-    private static double parsePrice(String value) {
-        try {
-            return Double.parseDouble(value.trim());
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Please enter the unit price as a number, for example 1200.00.");
         }
     }
 

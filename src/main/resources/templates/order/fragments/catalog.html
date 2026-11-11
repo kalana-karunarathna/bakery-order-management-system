@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!--
+  DEMO product catalog cards (see com.bakery.order.catalog.DemoProductCatalog).
+  menu(selectable, selectedId):
+    selectable = true  -> radio cards inside the Place Order form (name="productId"; only the ID is posted,
+                          the server sets name and price);
+    selectable = false -> cards with an "Order now" link to /orders/place?product=<id>.
+-->
+<body>
+<div th:fragment="menu(selectable, selectedId)" class="o-menu-grid" role="list">
+    <div th:each="p : ${products}" class="o-menu-item" role="listitem">
+        <th:block th:if="${selectable}">
+            <input type="radio" class="o-menu-radio" name="productId" th:id="'product-' + ${p.id}" th:value="${p.id}"
+                   th:checked="${p.id == selectedId}"
+                   th:attr="data-name=${p.name},data-price=${p.price},data-image=@{${p.image}}">
+        </th:block>
+        <label class="o-menu-card" th:for="${selectable} ? 'product-' + ${p.id}" th:attr="data-product-id=${p.id}">
+            <span class="o-menu-media">
+                <img th:src="@{${p.image}}" th:alt="${p.name}" loading="lazy" width="400" height="300">
+                <span class="o-menu-category" th:text="${p.category}">Cakes</span>
+            </span>
+            <span class="o-menu-body">
+                <span class="o-menu-name" th:text="${p.name}">Cherry Chocolate Layer Cake</span>
+                <span class="o-menu-desc" th:text="${p.description}">Description</span>
+                <span class="o-menu-foot">
+                    <span class="o-menu-price" th:text="'LKR ' + ${#numbers.formatDecimal(p.price, 1, 'COMMA', 2, 'POINT')}">LKR 4,850.00</span>
+                    <span th:if="${selectable}" class="o-menu-select" aria-hidden="true">
+                        <span class="o-menu-select-off">Select</span><span class="o-menu-select-on">Selected</span>
+                    </span>
+                    <span class="o-menu-id o-mono" th:text="${p.id}">P101</span>
+                </span>
+            </span>
+        </label>
+        <a th:unless="${selectable}" th:href="@{/orders/place(product=${p.id})}" class="btn btn-o-primary btn-sm o-menu-order"
+           th:attr="aria-label='Order now: ' + ${p.name}">
+            <svg class="o-icon" aria-hidden="true"><use href="#i-bag"/></svg>Order now
+        </a>
+    </div>
+</div>
+</body>
+</html>

@@ -26,7 +26,6 @@ class BakeryApplicationTests {
         "/products|Bakery Product Management",
         "/orders|Order Management",
         "/cake-bookings|Custom Cake Booking",
-        "/payments|Payment and Invoice Management",
         "/feedback|Feedback, Review and Admin Management"
     }, delimiter = '|')
     void pagesRenderSuccessfully(String path, String expectedHeading) throws Exception {
@@ -34,5 +33,13 @@ class BakeryApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(expectedHeading)))
                 .andExpect(content().string(containsString("href=\"/cake-bookings\"")));
+    }
+
+    /** Payment pages hold personal payment records, so they now require sign-in. */
+    @org.junit.jupiter.api.Test
+    void paymentPagesRequireSignIn() throws Exception {
+        mockMvc.perform(get("/payments"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern("**/login"));
     }
 }

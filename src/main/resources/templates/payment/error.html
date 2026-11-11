@@ -1,0 +1,8 @@
+<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payment/fragments :: head('Payment help')}"></head>
+<body class="payment-page" th:classappend="(${adminShell == true} ? 'admin-ui pay-in-admin' : 'sf-body')" th:with="page='error'"><th:block th:replace="~{payment/fragments :: top}"></th:block><div class="pay-shell" th:classappend="${adminShell == true and download != true} ? 'a-shell'"><th:block th:if="${adminShell == true and download != true}"><nav th:replace="~{fragments/admin :: sidebar('payments')}"></nav></th:block>
+<main id="main-content" class="pay-main" th:classappend="${adminShell == true and download != true} ? 'a-content' : 'container'">
+<div th:replace="~{payment/fragments :: brand}"></div>
+<div class="pay-workspace"><aside th:replace="~{payment/fragments :: sidebar}"></aside><div class="pay-content">
+<section class="pay-panel pay-empty pay-error-page"><div class="pay-empty-icon"><svg th:replace="~{payment/fragments :: icon('receipt')}"></svg></div><p class="pay-eyebrow">Let's get you back on track</p><h1>Payment could not be completed</h1><p role="alert" class="alert alert-danger" th:text="${error}"></p><p>Check your payment details or contact an administrator if you need help accessing a record.</p><a class="btn pay-primary" th:href="@{/payments}">Return to payment history</a></section>
+</div></div></main></div><th:block th:unless="${adminShell == true}"><footer th:replace="~{fragments/storefront :: footer}"></footer></th:block><th:block th:replace="~{payment/fragments :: scripts}"></th:block></body></html>

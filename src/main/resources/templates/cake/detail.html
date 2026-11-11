@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Booking Details')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+
+<main id="main-content" class="container py-5">
+
+    <a class="link-secondary"
+       th:href="${isAdmin == true} ? @{/cake-bookings/admin} : @{/cake-bookings}"
+       th:text="${isAdmin == true} ? '← Back to Admin Dashboard' : '← Back to My Bookings'">← Back to My Bookings</a>
+
+    <div class="d-flex align-items-center justify-content-between mt-4 mb-3 flex-wrap gap-2">
+        <h1 class="display-6 fw-bold mb-0">
+            Booking <span th:text="${booking.bookingId}">CB001</span>
+        </h1>
+        <!-- Status badge -->
+        <span class="badge fs-6 px-3 py-2"
+              th:classappend="${booking.status.badgeClass}"
+              th:text="${booking.status.label}">Pending</span>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- ── Design image ── -->
+        <div class="col-lg-5 text-center">
+            <img th:if="${booking.imageFileName != null}"
+                 th:src="@{/cake-images/{f}(f=${booking.imageFileName})}"
+                 alt="Design reference" class="img-fluid rounded shadow border"
+                 style="max-height:400px; object-fit:contain;">
+            <div th:if="${booking.imageFileName == null}"
+                 class="bg-light border rounded d-flex align-items-center justify-content-center"
+                 style="height:250px;">
+                <span class="text-secondary">No design image uploaded</span>
+            </div>
+        </div>
+
+        <!-- ── Details ── -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-body p-4">
+
+                    <h2 class="h5 mb-3 border-bottom pb-2">🎂 Cake Details</h2>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Type</dt>
+                        <dd class="col-sm-7" th:text="${booking.cake.getCakeType()}">Birthday Cake</dd>
+
+                        <dt class="col-sm-5">Flavour</dt>
+                        <dd class="col-sm-7" th:text="${booking.cake.flavour}">Chocolate</dd>
+
+                        <dt class="col-sm-5">Weight</dt>
+                        <dd class="col-sm-7" th:text="${booking.cake.weightKg + ' kg'}">2.0 kg</dd>
+
+                        <dt class="col-sm-5">Tiers</dt>
+                        <dd class="col-sm-7" th:text="${booking.cake.tiers}">2</dd>
+
+                        <dt class="col-sm-5">Message</dt>
+                        <dd class="col-sm-7"
+                            th:text="${booking.cake.messageOnCake.isEmpty() ? 'None' : booking.cake.messageOnCake}">
+                            Happy Birthday!
+                        </dd>
+
+                        <dt class="col-sm-5">Special Instructions</dt>
+                        <dd class="col-sm-7"
+                            th:text="${booking.cake.specialInstructions.isEmpty() ? 'None' : booking.cake.specialInstructions}">
+                            Nut free
+                        </dd>
+
+                        <dt class="col-sm-5">Type-specific Details</dt>
+                        <dd class="col-sm-7" th:text="${booking.cake.getExtraDetails()}">Age: 25</dd>
+                    </dl>
+
+                    <h2 class="h5 mt-4 mb-3 border-bottom pb-2">📋 Booking Details</h2>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Delivery Date</dt>
+                        <dd class="col-sm-7"
+                            th:text="${#temporals.format(booking.deliveryDate, 'dd MMMM yyyy')}">
+                            01 January 2027
+                        </dd>
+
+                        <dt class="col-sm-5">Contact Phone</dt>
+                        <dd class="col-sm-7" th:text="${booking.contactPhone}">0771234567</dd>
+
+                        <dt class="col-sm-5">Booked On</dt>
+                        <dd class="col-sm-7"
+                            th:text="${#temporals.format(booking.createdAt, 'dd MMM yyyy HH:mm')}">
+                            01 Jan 2027 10:30
+                        </dd>
+
+                        <!-- Price (final price or calculated estimate) -->
+                        <dt class="col-sm-5 fw-bold">Price</dt>
+                        <dd class="col-sm-7">
+                            <span class="fs-5 fw-bold text-success">
+                                Rs. <span th:text="${#numbers.formatDecimal(booking.price, 1, 'COMMA', 2, 'POINT')}">3,000.00</span>
+                            </span>
+                            <span th:if="${booking.customPrice != null}" class="badge bg-secondary ms-2 small">Final Price</span>
+                        </dd>
+                    </dl>
+
+                    <!-- Admin action buttons -->
+                    <div th:if="${isAdmin == true}" class="mt-4 d-flex gap-2 flex-wrap">
+                        <a th:href="@{/cake-bookings/admin/{id}/edit(id=${booking.bookingId})}"
+                           class="btn btn-primary">Edit Booking (Admin)</a>
+                        <form th:action="@{/cake-bookings/admin/{id}/delete(id=${booking.bookingId})}"
+                              method="post" class="d-inline"
+                              onsubmit="return confirm('Permanently delete this booking? This cannot be undone.');">
+                            <button type="submit" class="btn btn-outline-danger">Delete Booking</button>
+                        </form>
+                    </div>
+
+                    <!-- Customer action buttons – only for PENDING and non-admin -->
+                    <div th:if="${isAdmin != true and booking.pending}" class="mt-4 d-flex gap-2 flex-wrap">
+                        <a th:href="@{/cake-bookings/{id}/edit(id=${booking.bookingId})}"
+                           class="btn btn-primary">Edit Booking</a>
+                        <form th:action="@{/cake-bookings/{id}/delete(id=${booking.bookingId})}"
+                              method="post" class="d-inline"
+                              onsubmit="return confirm('Are you sure you want to cancel this booking? This cannot be undone.');">
+                            <button type="submit" class="btn btn-outline-danger">Cancel Booking</button>
+                        </form>
+                    </div>
+
+                    <p th:if="${isAdmin != true and not booking.pending}" class="text-secondary mt-4 small">
+                        This booking cannot be edited because its status is
+                        <strong th:text="${booking.status.label}">Confirmed</strong>.
+                    </p>
+
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /row -->
+
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
+
