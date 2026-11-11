@@ -51,13 +51,22 @@ public final class MongoCollections {
 
     /** Highest numeric part of IDs like U007 / O012 in a collection (0 if empty). */
     public static long maxIdNumber(MongoTemplate template, String collection) {
+        return maxIdNumber(template, collection, ID_NUMBER);
+    }
+
+    /** Highest numeric part of IDs with a longer prefix, e.g. {@code "PAY"} for PAY007 (0 if empty). */
+    public static long maxIdNumber(MongoTemplate template, String collection, String prefix) {
+        return maxIdNumber(template, collection, Pattern.compile("^" + Pattern.quote(prefix) + "(\\d+)$"));
+    }
+
+    private static long maxIdNumber(MongoTemplate template, String collection, Pattern idNumber) {
         long max = 0;
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.fields().include("_id");
         for (Document doc : template.find(query, Document.class, collection)) {
             Object id = doc.get("_id");
             if (id instanceof String s) {
-                Matcher m = ID_NUMBER.matcher(s);
+                Matcher m = idNumber.matcher(s);
                 if (m.matches()) max = Math.max(max, Long.parseLong(m.group(1)));
             }
         }

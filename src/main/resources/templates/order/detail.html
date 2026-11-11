@@ -124,7 +124,7 @@
                     </dl>
 
                     <!-- Actions: only the owner may edit / cancel, and only while PENDING (also enforced on the server). -->
-                    <div th:if="${order.editable and isOwner and !isAdmin}" class="o-summary-actions">
+                    <div th:if="${order.editable and isOwner and !isAdmin and !paymentLocked}" class="o-summary-actions">
                         <a th:href="@{/orders/{id}/edit(id=${order.id})}" class="btn btn-o-primary w-100">
                             <svg class="o-icon" aria-hidden="true"><use href="#i-edit"/></svg>Edit Order
                         </a>
@@ -142,6 +142,10 @@
                         </p>
                     </div>
 
+                    <div th:if="${paymentLocked}" class="o-callout">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                        <span>A payment is recorded for this order, so it can no longer be edited or cancelled online. Please contact the bakery for changes.</span>
+                    </div>
                     <div th:if="${!order.editable and order.status.name() != 'CANCELLED'}" class="o-callout">
                         <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
                         <span>This order is <strong th:text="${order.statusLabel}">Preparing</strong> and can no longer be changed.</span>
@@ -150,6 +154,10 @@
                         <svg class="o-icon" aria-hidden="true"><use href="#i-x-circle"/></svg>
                         <span>This order has been cancelled.</span>
                     </div>
+                    <p th:if="${order.editable and isOwner and !isAdmin and !paymentLocked and payment != null}" class="o-summary-note mt-3 mb-0">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                        Once a payment is recorded, the order can no longer be edited or cancelled online.
+                    </p>
                     <a th:if="${!order.editable and !isAdmin}" th:href="@{/orders/place}" class="btn btn-o-outline w-100 mt-3">Place a new order</a>
                     <th:block th:if="${isAdmin}">
                         <div th:if="${order.editable}" class="o-callout">
@@ -159,6 +167,61 @@
                         <a th:href="@{/orders/admin}" class="btn btn-o-primary w-100 mt-3">Manage status in Order management</a>
                     </th:block>
                 </aside>
+
+                <!-- Payment summary: calculated on the server from the payment records (Paid only counts as paid).
+                     Separate from the order status above: confirming a payment never moves the order forward. -->
+                <section th:if="${payment != null}" class="o-card o-summary o-payment-summary mt-4" aria-labelledby="payment-summary-title">
+                    <div class="o-card-head">
+                        <h2 id="payment-summary-title" class="o-card-title">Payment summary</h2>
+                        <span class="o-status" th:classappend="'o-status--' + ${payment.status.badge}" data-payment-status
+                              th:attr="data-status=${payment.status.name()}">
+                            <span class="o-status-dot" aria-hidden="true"></span>
+                            <span th:text="${payment.status.label}">Partially paid</span>
+                        </span>
+                    </div>
+
+                    <div th:if="${!payment.available}" class="o-callout o-callout--muted">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-alert"/></svg>
+                        <span>Payment information is unavailable right now. Please try again later.</span>
+                    </div>
+
+                    <dl th:if="${payment.available}" class="o-price-list">
+                        <div><dt>Order total</dt>
+                            <dd data-payment-total th:text="'LKR ' + ${#numbers.formatDecimal(payment.total, 1, 'COMMA', 2, 'POINT')}">LKR 1,450.00</dd></div>
+                        <div><dt>Confirmed paid</dt>
+                            <dd data-payment-paid th:text="'LKR ' + ${#numbers.formatDecimal(payment.paid, 1, 'COMMA', 2, 'POINT')}">LKR 1,400.00</dd></div>
+                        <div th:if="${payment.pending.signum() > 0}"><dt>Awaiting confirmation</dt>
+                            <dd data-payment-pending th:text="'LKR ' + ${#numbers.formatDecimal(payment.pending, 1, 'COMMA', 2, 'POINT')}">LKR 0.00</dd></div>
+                        <div th:if="${payment.refunded.signum() > 0}"><dt>Refunded</dt>
+                            <dd data-payment-refunded th:text="'LKR ' + ${#numbers.formatDecimal(payment.refunded, 1, 'COMMA', 2, 'POINT')}">LKR 0.00</dd></div>
+                        <div class="o-price-total"><dt>Outstanding balance</dt>
+                            <dd data-payment-outstanding th:text="'LKR ' + ${#numbers.formatDecimal(payment.outstanding, 1, 'COMMA', 2, 'POINT')}">LKR 50.00</dd></div>
+                    </dl>
+
+                    <p th:if="${payment.available and payment.pending.signum() > 0}" class="o-summary-note">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-clock"/></svg>
+                        <span th:text="'LKR ' + ${#numbers.formatDecimal(payment.pending, 1, 'COMMA', 2, 'POINT')} + ' is recorded and will count as paid once the bakery confirms it.'">Pending note</span>
+                    </p>
+                    <p th:if="${payment.available and payment.refunded.signum() > 0}" class="o-summary-note">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                        Refunded payments were returned to you and are not counted as paid.
+                    </p>
+                    <p th:if="${payment.available}" class="o-summary-note">
+                        <svg class="o-icon" aria-hidden="true"><use href="#i-info"/></svg>
+                        Only payments confirmed by the bakery count as paid. Payment status is separate from the order progress.
+                    </p>
+
+                    <div class="o-summary-actions mt-3">
+                        <a th:if="${canPayBalance}" th:href="@{/payments/new(orderId=${order.id})}" class="btn btn-o-primary w-100" data-pay-balance>
+                            <svg class="o-icon" aria-hidden="true"><use href="#i-receipt"/></svg>
+                            <span th:text="${payment.paid.signum() > 0 or payment.pending.signum() > 0}
+                                    ? 'Pay remaining balance (LKR ' + ${#numbers.formatDecimal(payment.payable, 1, 'COMMA', 2, 'POINT')} + ')'
+                                    : 'Pay for this order (LKR ' + ${#numbers.formatDecimal(payment.payable, 1, 'COMMA', 2, 'POINT')} + ')'">Pay remaining balance</span>
+                        </a>
+                        <a th:if="${isOwner and !isAdmin}" th:href="@{/payments(query=${order.id})}" class="btn btn-o-outline w-100">View payments &amp; invoices</a>
+                        <a th:if="${isAdmin}" th:href="@{/payments/admin(query=${order.id})}" class="btn btn-o-outline w-100">View payments for this order</a>
+                    </div>
+                </section>
             </div>
         </div>
     </th:block>

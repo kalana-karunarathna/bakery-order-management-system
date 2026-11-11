@@ -193,9 +193,12 @@ class UserWebSecurityTests {
     @Test
     void publicPagesStayPublic() throws Exception {
         for (String path : new String[]{"/", "/users", "/login", "/register", "/products", "/orders",
-                "/cake-bookings", "/payments", "/feedback"}) {
+                "/cake-bookings", "/feedback"}) {
             mvc.perform(get(path)).andExpect(status().isOk());
         }
+        // Payments are no longer a temporary public route.
+        mvc.perform(get("/payments")).andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern("**/login"));
     }
 
     @Test

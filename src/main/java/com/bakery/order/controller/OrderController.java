@@ -4,6 +4,7 @@ import com.bakery.order.model.Order;
 import com.bakery.order.model.OrderStatus;
 import com.bakery.order.model.OrderType;
 import com.bakery.order.service.OrderNotFoundException;
+import com.bakery.order.service.OrderPaymentSummary;
 import com.bakery.order.service.OrderService;
 import com.bakery.order.service.OrderStorageException;
 import com.bakery.user.service.AuthenticatedUser;
@@ -22,8 +23,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.support.RequestContextUtils;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Handles all HTTP requests for the Order Management module.
@@ -128,7 +131,13 @@ public class OrderController {
     @PreAuthorize("hasRole('CUSTOMER')")
     public String myOrders(Model model) {
         AuthenticatedUser me = currentUserService.requireCurrentUser();
-        model.addAttribute("orders", orderService.getOrdersForCustomer(me.id()));
+        List<Order> orders = orderService.getOrdersForCustomer(me.id());
+        model.addAttribute("orders", orders);
+        // Orders with Pending or Paid payments can no longer be edited or cancelled online.
+        // Payment summaries are calculated on the server from the payment records of these (own) orders.
+        model.addAttribute("paymentSummaries", orderService.paymentSummaries(orders));
+        model.addAttribute("paymentLockedIds", orders.stream().filter(Order::isEditable).map(Order::getId)
+                .filter(orderService::isPaymentLocked).collect(Collectors.toSet()));
         model.addAttribute("customerName", me.fullName());
         model.addAttribute("customerId", me.id());
         return "order/my-orders";
@@ -154,6 +163,13 @@ public class OrderController {
         model.addAttribute("order", order);
         model.addAttribute("isOwner", order.getCustomerId().equals(me.id()));
         model.addAttribute("isAdmin", me.isAdmin());
+        model.addAttribute("paymentLocked", order.isEditable() && orderService.isPaymentLocked(id));
+        // Only after the owner/admin check above: another customer's order never reaches this point.
+        OrderPaymentSummary payment = orderService.paymentSummary(order).orElse(null);
+        model.addAttribute("payment", payment);
+        model.addAttribute("canPayBalance", payment != null && payment.isAvailable() && !me.isAdmin()
+                && order.getCustomerId().equals(me.id()) && order.getStatus() != OrderStatus.CANCELLED
+                && payment.getPayable().signum() > 0);
         return "order/detail";
     }
 
@@ -165,6 +181,11 @@ public class OrderController {
         Order order = orderService.getOwnOrder(id, currentUserService.requireCurrentUser().id());
         if (!order.isEditable()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Only pending orders can be edited.");
+            return "redirect:/orders/" + id;
+        }
+        if (orderService.isPaymentLocked(id)) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "This order has a payment recorded, so it can't be changed or cancelled online. Please contact the bakery.");
             return "redirect:/orders/" + id;
         }
         model.addAttribute("order", order);
@@ -237,6 +258,8 @@ public class OrderController {
             redirectAttributes.addFlashAttribute("successMessage", "Order " + id + " deleted.");
         } catch (OrderNotFoundException e) {
             redirectAttributes.addFlashAttribute("errorMessage", NOT_FOUND);
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());   // e.g. order has payments
         }
         return "redirect:/orders/admin";
     }

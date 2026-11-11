@@ -3,6 +3,8 @@ package com.bakery.order.service;
 import com.bakery.order.model.*;
 import com.bakery.order.repository.OrderRepository;
 import com.bakery.user.service.AuthenticatedUser;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -13,6 +15,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -22,6 +25,10 @@ import java.util.regex.Pattern;
  * <p>Validates input, enforces ownership (a customer can only see and change their own orders),
  * enforces the order status workflow, and delegates persistence to {@link OrderRepository}.
  * The customer ID always comes from the signed-in user (see OrderController), never from a form.</p>
+ *
+ * <p>Orders with payments are protected through {@link OrderPaymentGuard}: Pending or Paid payments
+ * block editing and cancelling, and any payment record blocks deletion. The payment check runs before
+ * the order is locked for the update, so order and payment storage never wait for each other.</p>
  */
 @Service
 public class OrderService {
@@ -43,9 +50,29 @@ public class OrderService {
             OrderStatus.CANCELLED, EnumSet.noneOf(OrderStatus.class));
 
     private final OrderRepository repo;
+    private final OrderPaymentGuard paymentGuard;
+    /** Optional: present when Payment Management is installed. */
+    private final OrderPaymentSummaryProvider paymentSummaries;
 
+    /** Without a payment module (e.g. unit tests): no payment protection is needed. */
     public OrderService(OrderRepository repo) {
+        this(repo, OrderPaymentGuard.NONE);
+    }
+
+    public OrderService(OrderRepository repo, OrderPaymentGuard paymentGuard) {
+        this(repo, paymentGuard, null);
+    }
+
+    public OrderService(OrderRepository repo, OrderPaymentGuard paymentGuard, OrderPaymentSummaryProvider paymentSummaries) {
         this.repo = repo;
+        this.paymentGuard = paymentGuard == null ? OrderPaymentGuard.NONE : paymentGuard;
+        this.paymentSummaries = paymentSummaries;
+    }
+
+    @Autowired
+    public OrderService(OrderRepository repo, ObjectProvider<OrderPaymentGuard> paymentGuard,
+                        ObjectProvider<OrderPaymentSummaryProvider> paymentSummaries) {
+        this(repo, paymentGuard.getIfAvailable(() -> OrderPaymentGuard.NONE), paymentSummaries.getIfAvailable());
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -139,6 +166,8 @@ public class OrderService {
      */
     public Order updateOwnOrder(String orderId, String customerId, int newQuantity, String newDeliveryAddress) {
         validateQuantity(newQuantity);
+        getOwnOrder(orderId, customerId);   // ownership first, so another customer learns nothing
+        requireNoActivePayments(orderId, CUSTOMER_PAYMENT_LOCK);
         return io(() -> repo.update(orderId, order -> {
             requireOwner(order, customerId);
             if (order.getStatus() != OrderStatus.PENDING) {
@@ -154,6 +183,8 @@ public class OrderService {
 
     /** A customer may cancel their own order only while it is still PENDING. */
     public Order cancelOwnOrder(String orderId, String customerId) {
+        getOwnOrder(orderId, customerId);
+        requireNoActivePayments(orderId, CUSTOMER_PAYMENT_LOCK);
         return io(() -> repo.update(orderId, order -> {
             requireOwner(order, customerId);
             if (order.getStatus() != OrderStatus.PENDING) {
@@ -169,6 +200,10 @@ public class OrderService {
     /** Updates the status of an order (admin), following the allowed workflow. */
     public Order updateStatus(String orderId, OrderStatus newStatus) {
         if (newStatus == null) throw new IllegalArgumentException("Choose a status.");
+        if (newStatus == OrderStatus.CANCELLED) {
+            requireNoActivePayments(orderId, "Order " + orderId + " has pending or paid payments. Cancel or fail the"
+                    + " pending payments, or refund the paid ones, in Payments before cancelling the order.");
+        }
         return io(() -> repo.update(orderId, order -> {
             if (!canTransition(order.getStatus(), newStatus)) {
                 throw new IllegalStateException("An order can't move from " + label(order.getStatus())
@@ -177,6 +212,34 @@ public class OrderService {
             order.setStatus(newStatus);
             return order;
         }));
+    }
+
+    /**
+     * True if Pending or Paid payments lock the order (used by the order pages to hide Edit / Cancel).
+     * If payment data cannot be read, the order is shown as locked; the server checks again on every change.
+     */
+    public boolean isPaymentLocked(String orderId) {
+        try {
+            return paymentGuard.paymentState(orderId) == OrderPaymentGuard.PaymentState.ACTIVE;
+        } catch (IllegalStateException e) {
+            return true;
+        }
+    }
+
+    /**
+     * Payment summary of an order the caller has already been allowed to see (via {@link #getOrderFor} or
+     * {@link #getOrdersForCustomer}). Empty when no payment module is installed. Read-only: it never
+     * changes the order or its status.
+     */
+    public Optional<OrderPaymentSummary> paymentSummary(Order order) {
+        return paymentSummaries == null ? Optional.empty() : Optional.of(paymentSummaries.summarize(order));
+    }
+
+    /** Payment summaries keyed by order ID (empty map without a payment module). */
+    public Map<String, OrderPaymentSummary> paymentSummaries(List<Order> orders) {
+        Map<String, OrderPaymentSummary> result = new java.util.LinkedHashMap<>();
+        for (Order order : orders) paymentSummary(order).ifPresent(summary -> result.put(order.getId(), summary));
+        return result;
     }
 
     /** True if an admin may move an order from {@code from} to {@code to}. */
@@ -189,8 +252,12 @@ public class OrderService {
         return TRANSITIONS.getOrDefault(current, Set.of());
     }
 
-    /** Permanently removes an order record (admin only). */
+    /** Permanently removes an order record (admin only). Orders with payment records are kept. */
     public void deleteOrder(String orderId) {
+        if (paymentGuard.paymentState(orderId) != OrderPaymentGuard.PaymentState.NONE) {
+            throw new IllegalStateException("Order " + orderId + " has payment records, so it can't be deleted."
+                    + " Cancel the order instead to keep its payment history.");
+        }
         io(() -> {
             repo.delete(orderId);
             return null;
@@ -198,6 +265,15 @@ public class OrderService {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static final String CUSTOMER_PAYMENT_LOCK = "This order has a payment recorded, so it can't be changed"
+            + " or cancelled online. Please contact the bakery.";
+
+    private void requireNoActivePayments(String orderId, String message) {
+        if (paymentGuard.paymentState(orderId) == OrderPaymentGuard.PaymentState.ACTIVE) {
+            throw new IllegalStateException(message);
+        }
+    }
 
     private static final Comparator<Order> NEWEST_FIRST =
             Comparator.comparing(Order::getOrderDate).thenComparing(Order::getId).reversed();

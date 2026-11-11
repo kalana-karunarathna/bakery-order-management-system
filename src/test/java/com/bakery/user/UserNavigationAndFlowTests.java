@@ -297,13 +297,18 @@ class UserNavigationAndFlowTests {
 
     @Test
     void teamPagesRenderForEveryRole() throws Exception {
-        String[] pages = {"/", "/users", "/products", "/orders", "/cake-bookings", "/payments", "/feedback"};
+        String[] pages = {"/", "/users", "/products", "/orders", "/cake-bookings", "/feedback"};
         for (String page : pages) {
             mvc.perform(get(page)).andExpect(status().isOk());
             mvc.perform(get(page).with(user(principal(alice)))).andExpect(status().isOk());
             mvc.perform(get(page).with(user(principal(admin)))).andExpect(status().isOk())
                     .andExpect(content().string(containsString("href=\"/cake-bookings\"")));
         }
+        // Payments are integrated with sign-in: visitors are sent to sign in, both roles see their payment pages.
+        mvc.perform(get("/payments")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrlPattern("**/login"));
+        mvc.perform(get("/payments").with(user(principal(alice)))).andExpect(status().isOk());
+        mvc.perform(get("/payments").with(user(principal(admin)))).andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/cake-bookings\"")));
     }
 
     private static Path createTempDir() {
